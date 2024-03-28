@@ -149,4 +149,11 @@ class JavaPlanBuilder(wayangCtx: WayangContext, jobName: String) {
     this
   }
 
+  /**
+    * Executes explain for the [[WayangPlan]] that is being created.
+    */
+  def buildAndExplain(): Unit = {
+    this.planBuilder.buildAndExplain()
+  }
+
 }
