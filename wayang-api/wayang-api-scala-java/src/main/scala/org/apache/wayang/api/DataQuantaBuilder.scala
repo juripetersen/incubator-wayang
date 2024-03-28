@@ -373,7 +373,7 @@ trait DataQuantaBuilder[+This <: DataQuantaBuilder[_, Out], Out] extends Logging
     * Feed the built [[DataQuanta]] into a [[LocalCallbackSink]]. This triggers
     * explanation of the constructed [[WayangPlan]].
     */
-  def collect(): Unit = {
+  def explain(): Unit = {
     this.dataQuanta().explain()
   }
 
