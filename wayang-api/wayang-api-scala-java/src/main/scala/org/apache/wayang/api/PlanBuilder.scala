@@ -111,8 +111,7 @@ class PlanBuilder(wayangContext: WayangContext, private var jobName: String = nu
     */
   def buildAndExplain(): Unit = {
     val plan: WayangPlan = new WayangPlan(this.sinks.toArray: _*)
-    //this.wayangContext.explain(plan, this.udfJars.toArray: _*)
-    this.wayangContext.explain(plan, "")
+    this.wayangContext.explain(plan, this.udfJars.toArray: _*)
   }
 
   /**
