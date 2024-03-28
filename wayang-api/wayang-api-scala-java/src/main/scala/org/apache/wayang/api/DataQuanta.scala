@@ -762,7 +762,7 @@ class DataQuanta[Out: ClassTag](val operator: ElementaryOperator, outputIndex: I
     collector
   }
 
-  def explain(toJson: boolean = false): Unit = {
+  def explain(toJson: Boolean = false): Unit = {
     // Set up the sink.
     val collector = new java.util.LinkedList[Out]()
     val sink = LocalCallbackSink.createCollectingSink(collector, dataSetType[Out])

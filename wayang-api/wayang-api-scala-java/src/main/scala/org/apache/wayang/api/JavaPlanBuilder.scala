@@ -152,7 +152,7 @@ class JavaPlanBuilder(wayangCtx: WayangContext, jobName: String) {
   /**
     * Executes explain for the [[WayangPlan]] that is being created.
     */
-  def buildAndExplain(toJson: boolean = false): Unit = {
+  def buildAndExplain(toJson: Boolean = false): Unit = {
     this.planBuilder.buildAndExplain(toJson)
   }
 
