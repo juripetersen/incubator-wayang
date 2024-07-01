@@ -60,6 +60,24 @@ public class DefaultLoadEstimator extends LoadEstimator {
     public DefaultLoadEstimator(int numInputs,
                                 int numOutputs,
                                 double correctnessProbability,
+                                ToLongBiFunction<long[], long[]> singlePointFunction) {
+        this(numInputs, numOutputs, correctnessProbability, null, singlePointFunction);
+    }
+
+    public DefaultLoadEstimator(int numInputs,
+                                int numOutputs,
+                                double correctnessProbability,
+                                CardinalityEstimate nullCardinalityReplacement,
+                                ToLongBiFunction<long[], long[]> singlePointFunction) {
+        this(
+                numInputs, numOutputs, correctnessProbability, nullCardinalityReplacement,
+                (context, inputEstimates, outputEstimates) -> singlePointFunction.applyAsLong(inputEstimates, outputEstimates)
+        );
+    }
+
+    public DefaultLoadEstimator(int numInputs,
+                                int numOutputs,
+                                double correctnessProbability,
                                 CardinalityEstimate nullCardinalityReplacement,
                                 SinglePointEstimationFunction singlePointFunction) {
         super(nullCardinalityReplacement);

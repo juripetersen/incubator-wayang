@@ -19,6 +19,7 @@
 package org.apache.wayang.basic.operators;
 
 import org.apache.wayang.core.function.TransformationDescriptor;
+import org.apache.wayang.core.function.FunctionDescriptor.SerializableToLongBiFunction;
 import org.apache.wayang.core.optimizer.costs.DefaultLoadEstimator;
 import org.apache.wayang.core.optimizer.costs.NestableLoadProfileEstimator;
 import org.apache.wayang.core.plan.wayangplan.UnarySink;
