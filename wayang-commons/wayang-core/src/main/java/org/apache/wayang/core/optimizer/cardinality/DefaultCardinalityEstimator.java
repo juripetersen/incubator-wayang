@@ -23,6 +23,8 @@ import org.apache.wayang.core.function.FunctionDescriptor;
 import org.apache.wayang.core.optimizer.OptimizationContext;
 
 import java.util.Arrays;
+import java.util.function.ToLongBiFunction;
+import java.util.function.ToLongFunction;
 
 /**
  * Default implementation of the {@link CardinalityEstimator}. Generalizes a single-point estimation function.
@@ -57,6 +59,26 @@ public class DefaultCardinalityEstimator implements CardinalityEstimator {
         this.certaintyProb = certaintyProb;
         this.numInputs = numInputs;
         this.singlePointEstimator = singlePointEstimator;
+        this.isAllowMoreInputs = isAllowMoreInputs;
+    }
+
+    public DefaultCardinalityEstimator(double certaintyProb,
+                                       int numInputs,
+                                       boolean isAllowMoreInputs,
+                                       ToLongFunction<long[]> singlePointEstimator) {
+        this(certaintyProb,
+                numInputs,
+                isAllowMoreInputs,
+                (inputCards, wayangContext) -> singlePointEstimator.applyAsLong(inputCards));
+    }
+
+    public DefaultCardinalityEstimator(double certaintyProb,
+                                       int numInputs,
+                                       boolean isAllowMoreInputs,
+                                       ToLongBiFunction<long[], Configuration> singlePointEstimator) {
+        this.certaintyProb = certaintyProb;
+        this.numInputs = numInputs;
+        this.singlePointEstimator = (FunctionDescriptor.SerializableToLongBiFunction<long[], Configuration>) singlePointEstimator;
         this.isAllowMoreInputs = isAllowMoreInputs;
     }
 
