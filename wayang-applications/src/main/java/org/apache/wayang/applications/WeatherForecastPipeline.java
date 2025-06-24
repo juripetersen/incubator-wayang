@@ -61,7 +61,7 @@ public class WeatherForecastPipeline {
     static JavaPlanBuilder planBuilder;
 
     public static List<DataQuantaBuilder<?, Record>> loadData() {
-        String dataFolder = "file:///tmp/files/weather_data/";
+        String dataFolder = "file:///usr/src/app/files/weather_data/";
 
         String radarFileName = "radar_sample.parquet";
         DataQuantaBuilder<?, Record> radarData = planBuilder.readParquet(dataFolder + radarFileName, null);
