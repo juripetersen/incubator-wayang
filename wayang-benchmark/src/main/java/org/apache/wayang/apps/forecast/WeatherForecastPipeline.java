@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.wayang.applications;
+package org.apache.wayang.apps.forecast;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
