@@ -36,7 +36,7 @@
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <tensorflow.version>1.0.0</tensorflow.version>
+        <tensorflow.version>0.5.0</tensorflow.version>
     </properties>
 
     <dependencies>
