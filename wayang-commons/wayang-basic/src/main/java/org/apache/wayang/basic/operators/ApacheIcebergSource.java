@@ -59,7 +59,7 @@ public class ApacheIcebergSource extends UnarySource<Record> {
 
     private final TableIdentifier tableIdentifier;
 
-    private List<Expression> whereExpressions;
+    private Collection<Expression> whereExpressions;
     private Collection<String> columns;
 
     private org.apache.iceberg.Table cachedTable = null;
@@ -79,13 +79,13 @@ public class ApacheIcebergSource extends UnarySource<Record> {
      * @return a new {@link ApacheIcebergSource} instance
      */
     public static ApacheIcebergSource create(Catalog catalog, TableIdentifier tableIdentifier,
-            List<org.apache.iceberg.expressions.Expression> whereExpressions,
+            Collection<org.apache.iceberg.expressions.Expression> whereExpressions,
             Collection<String> columns) {
         return new ApacheIcebergSource(catalog, tableIdentifier, whereExpressions, columns);
     }
 
-    private ApacheIcebergSource(Catalog catalog, TableIdentifier tableIdentifier,
-            List<Expression> whereExpressions, Collection<String> columns) {
+    public ApacheIcebergSource(Catalog catalog, TableIdentifier tableIdentifier,
+            Collection<Expression> whereExpressions, Collection<String> columns) {
         super(createOutputDataSetType(columns));
         this.catalog = catalog;
         this.tableIdentifier = tableIdentifier;
@@ -195,7 +195,7 @@ public class ApacheIcebergSource extends UnarySource<Record> {
         return tableIdentifier;
     }
 
-    public List<Expression> getWhereExpressions() {
+    public Collection<Expression> getWhereExpressions() {
         return whereExpressions;
     }
 
