@@ -52,7 +52,7 @@ public class JavaApacheIcebergSource extends ApacheIcebergSource implements Java
      *                         used to load the table
      * @param tableIdentifier  {@linkorg.apache.iceberg.catalog.TableIdentifier} identifier
      *                         of the target table
-     * @param whereExpressions list of
+     * @param whereExpressions Collection of
      *                         {@link org.apache.iceberg.expressions.Expression}
      *                         filters; empty list for none
      * @param columns          collection of column names to project; empty list for
@@ -61,7 +61,7 @@ public class JavaApacheIcebergSource extends ApacheIcebergSource implements Java
      */
 
     public JavaApacheIcebergSource(Catalog catalog, TableIdentifier tableIdentifier,
-            List<Expression> whereExpressions, Collection<String> columns) {
+            Expression[] whereExpressions, String[] columns) {
         super(ApacheIcebergSource.create(catalog, tableIdentifier, whereExpressions, columns));
     }
 

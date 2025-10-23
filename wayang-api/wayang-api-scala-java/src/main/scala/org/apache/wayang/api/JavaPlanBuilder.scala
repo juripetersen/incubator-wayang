@@ -25,7 +25,7 @@ import java.util.{Collection => JavaCollection}
 import org.apache.commons.lang3.Validate
 import org.apache.wayang.api.util.DataQuantaBuilderCache
 import org.apache.wayang.basic.data.Record
-import org.apache.wayang.basic.operators.{AmazonS3Source, AzureBlobStorageSource, GoogleCloudStorageSource, KafkaTopicSource, ParquetSource, TableSource, TextFileSource}
+import org.apache.wayang.basic.operators.{AmazonS3Source, AzureBlobStorageSource, GoogleCloudStorageSource, KafkaTopicSource, ParquetSource, TableSource, TextFileSource, ApacheIcebergSource}
 import org.apache.wayang.commons.util.profiledb.model.Experiment
 import org.apache.wayang.core.api.WayangContext
 import org.apache.wayang.core.plan.wayangplan._
@@ -71,6 +71,14 @@ class JavaPlanBuilder(wayangCtx: WayangContext, jobName: String) {
    */
   def readParquet(url: String, projection: Array[String] = null): UnarySourceDataQuantaBuilder[UnarySourceDataQuantaBuilder[_, Record], Record] =
     createSourceBuilder(ParquetSource.create(url, projection))(ClassTag(classOf[Record]))
+
+
+  def readApacheIcebergTable(
+    catalog: org.apache.iceberg.catalog.Catalog, 
+    tableIdentifier: org.apache.iceberg.catalog.TableIdentifier, 
+    filterExpressions: Array[org.apache.iceberg.expressions.Expression] = null, 
+    projectionColumns: Array[String] = null): UnarySourceDataQuantaBuilder[UnarySourceDataQuantaBuilder[_, Record], Record] =
+      createSourceBuilder(ApacheIcebergSource.create(catalog, tableIdentifier, filterExpressions, projectionColumns))(ClassTag(classOf[Record]))
 
   /**
     * Read a text file from a Google Cloud Storage bucket and provide it as a dataset of [[String]]s, one per line.

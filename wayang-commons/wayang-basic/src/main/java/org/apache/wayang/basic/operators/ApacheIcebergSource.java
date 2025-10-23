@@ -37,6 +37,7 @@ import org.apache.iceberg.data.IcebergGenerics.ScanBuilder;
 import org.apache.iceberg.expressions.Expression;
 import org.apache.iceberg.io.CloseableIterable;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -79,9 +80,10 @@ public class ApacheIcebergSource extends UnarySource<Record> {
      * @return a new {@link ApacheIcebergSource} instance
      */
     public static ApacheIcebergSource create(Catalog catalog, TableIdentifier tableIdentifier,
-            Collection<org.apache.iceberg.expressions.Expression> whereExpressions,
-            Collection<String> columns) {
-        return new ApacheIcebergSource(catalog, tableIdentifier, whereExpressions, columns);
+            org.apache.iceberg.expressions.Expression[] whereExpressions,
+            String[] columns) {
+        
+        return new ApacheIcebergSource(catalog, tableIdentifier, Arrays.asList(whereExpressions), Arrays.asList(columns));
     }
 
     public ApacheIcebergSource(Catalog catalog, TableIdentifier tableIdentifier,

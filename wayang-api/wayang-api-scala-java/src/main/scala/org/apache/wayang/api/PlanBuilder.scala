@@ -24,7 +24,7 @@ package org.apache.wayang.api
 import org.apache.commons.lang3.Validate
 import org.apache.wayang.api
 import org.apache.wayang.basic.data.Record
-import org.apache.wayang.basic.operators.{AmazonS3Source, AzureBlobStorageSource, CollectionSource, GoogleCloudStorageSource, ObjectFileSource, ParquetSource, TableSource, TextFileSource}
+import org.apache.wayang.basic.operators.{AmazonS3Source, AzureBlobStorageSource, CollectionSource, GoogleCloudStorageSource, ObjectFileSource, ParquetSource, TableSource, TextFileSource, ApacheIcebergSource}
 import org.apache.wayang.commons.util.profiledb.model.Experiment
 import org.apache.wayang.core.api.WayangContext
 import org.apache.wayang.core.plan.wayangplan._
@@ -139,6 +139,13 @@ class PlanBuilder(private[api] val wayangContext: WayangContext, private var job
    * @return [[DataQuanta]] of [[Record]]s representing the file
    */
   def readParquet(url: String, projection: Array[String] = null): DataQuanta[Record] = load(ParquetSource.create(url, projection))
+
+
+  def readApacheIcebergTable(
+    catalog: org.apache.iceberg.catalog.Catalog, 
+    tableIdentifier: org.apache.iceberg.catalog.TableIdentifier, 
+    filterExpressions: Array[org.apache.iceberg.expressions.Expression] = null, 
+    projectionColumns: Array[String] = null): DataQuanta[Record] = load(ApacheIcebergSource.create(catalog, tableIdentifier, filterExpressions, projectionColumns))
 
  /**
     * Read a text file from a Google Cloud Storage bucket and provide it as a dataset of [[String]]s, one per line.
