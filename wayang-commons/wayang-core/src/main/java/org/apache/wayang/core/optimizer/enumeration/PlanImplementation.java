@@ -51,6 +51,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -253,7 +254,7 @@ public class PlanImplementation {
 
             // Discern LoopHeadOperator InputSlots and loop body InputSlots.
             final List<LoopImplementation.IterationImplementation> iterationImpls = loopImplementation.getIterationImplementations();
-            final Collection<InputSlot<?>> collector = new HashSet<>(innerInputs.size());
+            final Collection<InputSlot<?>> collector = new LinkedHashSet<>(innerInputs.size());
             for (InputSlot<?> innerInput : innerInputs) {
                 if (innerInput.getOwner() == loopSubplan.getLoopHead()) {
                     final LoopImplementation.IterationImplementation initialIterationImpl = iterationImpls.get(0);
@@ -327,7 +328,7 @@ public class PlanImplementation {
             // For all the iterations, return the potential OutputSlots.
             final List<LoopImplementation.IterationImplementation> iterationImpls =
                     loopImplementation.getIterationImplementations();
-            final Set<Tuple<OutputSlot<?>, PlanImplementation>> collector = new HashSet<>(iterationImpls.size());
+            final Set<Tuple<OutputSlot<?>, PlanImplementation>> collector = new LinkedHashSet<>(iterationImpls.size());
             for (LoopImplementation.IterationImplementation iterationImpl : iterationImpls) {
                 final Collection<Tuple<OutputSlot<?>, PlanImplementation>> outputsWithContext =
                         iterationImpl.getBodyImplementation().findExecutionOperatorOutputWithContext(innerOutput);
@@ -693,8 +694,8 @@ public class PlanImplementation {
 
     private Tuple<List<ProbabilisticDoubleInterval>, List<Double>> getParallelOperatorJunctionAllCostEstimate(Operator operator) {
 
-        Set<Operator> inputOperators = new HashSet<>();
-        Set<Junction> inputJunction = new HashSet<>();
+        Set<Operator> inputOperators = new LinkedHashSet<>();
+        Set<Junction> inputJunction = new LinkedHashSet<>();
 
         List<ProbabilisticDoubleInterval> probalisticCost = new ArrayList<>();
         List<Double> squashedCost = new ArrayList<>();
