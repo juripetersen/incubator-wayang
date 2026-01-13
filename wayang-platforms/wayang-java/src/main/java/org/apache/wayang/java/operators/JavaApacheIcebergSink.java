@@ -20,6 +20,7 @@ package org.apache.wayang.java.operators;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -34,7 +35,7 @@ import org.apache.iceberg.io.DataWriter;
 import org.apache.iceberg.io.FileAppenderFactory;
 import org.apache.iceberg.io.OutputFileFactory;
 import org.apache.iceberg.data.Record;
-
+import org.apache.wayang.basic.channels.FileChannel;
 import org.apache.wayang.basic.operators.ApacheIcebergSink;
 import org.apache.wayang.core.api.exception.WayangException;
 import org.apache.wayang.core.optimizer.OptimizationContext;
@@ -59,13 +60,11 @@ import org.apache.wayang.java.platform.JavaPlatform;
  * {@link org.apache.wayang.basic.data.Record} (or subclass).
  */
 
-public class JavaApacheIcebergSink<R extends org.apache.wayang.basic.data.Record> extends ApacheIcebergSink<R>
+public class JavaApacheIcebergSink extends ApacheIcebergSink
         implements JavaExecutionOperator {
 
-    // private final Logger logger = LogManager.getLogger(this.getClass());
     private final int defaultPartitionId = 1;
     private final int defaultTaskId = 1;
-    private FileFormat fileFormat = FileFormat.PARQUET;
 
     /**
      * Creates a new sink for the Java Platform.
@@ -75,29 +74,17 @@ public class JavaApacheIcebergSink<R extends org.apache.wayang.basic.data.Record
      * @param schema          Iceberg write schema; must be compatible with the
      *                        target table
      * @param tableIdentifier fully qualified identifier of the target table
+     * 
      * @param fileFormat      file format used for writing (e.g., Parquet, Avro)
-     * @param type            {@link DataSetType} of the incoming data quanta
      */
-    public JavaApacheIcebergSink(Catalog catalog, Schema schema, TableIdentifier tableIdentifier, FileFormat fileFormat,
-            DataSetType<R> type) {
-        super(catalog, schema, tableIdentifier, type);
-        this.fileFormat = fileFormat;
+    public JavaApacheIcebergSink(
+        Catalog catalog, 
+        Schema schema, 
+        TableIdentifier tableIdentifier, 
+        FileFormat outputFileFormnat) {
+        super(catalog, schema, tableIdentifier, outputFileFormnat);
     }
 
-    /**
-     * Creates a new sink for the Java Platform using Parquet as the default file
-     * format.
-     *
-     * @param catalog         Iceberg catalog used to resolve the target table; must
-     *                        not be {@code null}
-     * @param schema          Iceberg write schema; must be compatible with the
-     *                        target table
-     * @param tableIdentifier fully qualified identifier of the target table
-     * @param type            {@link DataSetType} of the incoming data quanta
-     */
-    public JavaApacheIcebergSink(Catalog catalog, Schema schema, TableIdentifier tableIdentifier, DataSetType<R> type) {
-        super(catalog, schema, tableIdentifier, type);
-    }
 
     /**
      * Copy constructor.
@@ -105,19 +92,11 @@ public class JavaApacheIcebergSink<R extends org.apache.wayang.basic.data.Record
      * @param that sink instance to copy
      */
 
-    public JavaApacheIcebergSink(ApacheIcebergSink<R> that) {
+    public JavaApacheIcebergSink(ApacheIcebergSink that) {
         super(that);
-        this.fileFormat = that.getFileFormat();
     }
 
-    private boolean tableExists() {
-        return catalog.tableExists(tableIdentifier);
-    }
 
-    @Override
-    public FileFormat getFileFormat() {
-        return this.fileFormat;
-    }
 
     @Override
     public Tuple<Collection<ExecutionLineageNode>, Collection<ChannelInstance>> evaluate(
@@ -131,6 +110,8 @@ public class JavaApacheIcebergSink<R extends org.apache.wayang.basic.data.Record
             assert inputs.length == 1;
             assert outputs.length == 2;
 
+            FileFormat outputFileFormat = getOutputFileFormat();
+
             JavaChannelInstance input = (JavaChannelInstance) inputs[0];
 
             if (!tableExists()) {
@@ -138,24 +119,26 @@ public class JavaApacheIcebergSink<R extends org.apache.wayang.basic.data.Record
             }
 
             Stream<org.apache.iceberg.data.Record> inputStream = input
-                    .<R>provideStream()
-                    .map(r -> wayangRecordToIcebergRecord(r));
+                    .provideStream()
+                    .peek(r -> {
+                        if (!(r instanceof org.apache.wayang.basic.data.Record)) {
+                           throw new WayangException("Expected Wayang Record but got " + r.getClass());
+                        }})
+                    .map(r ->  wayangRecordToIcebergRecord((org.apache.wayang.basic.data.Record) r));
 
             Table table = catalog.loadTable(tableIdentifier);
             OutputFileFactory outputFileFactory = OutputFileFactory
                     .builderFor(table, this.defaultPartitionId, this.defaultTaskId)
-                    .format(fileFormat)
+                    .format(outputFileFormat)
                     .build();
 
-            // TODO HOW SHOULD WE PASS DOWN PARTITIONS OR USE PARTITIONS?
             EncryptedOutputFile outputFile = outputFileFactory.newOutputFile();
 
             FileAppenderFactory<org.apache.iceberg.data.Record> appenderFactory = new org.apache.iceberg.data.GenericAppenderFactory(
                     this.schema);
 
-            // TODO ADD SUPPORT FOR PARITTION ALSO
             try (DataWriter<org.apache.iceberg.data.Record> writer = appenderFactory.newDataWriter(outputFile,
-                    fileFormat, /* Partition */null)) {
+                    outputFileFormat, /* Partition */null)) {
 
                 inputStream.forEach(dataQuanta -> {
                     writer.write(dataQuanta);
@@ -169,6 +152,11 @@ public class JavaApacheIcebergSink<R extends org.apache.wayang.basic.data.Record
 
         return ExecutionOperator.modelEagerExecution(inputs, outputs, operatorContext);
 
+    }
+
+    @Override
+    protected ExecutionOperator createCopy() {
+        return new JavaApacheIcebergSink(this.catalog, this.schema, this.tableIdentifier, getOutputFileFormat());
     }
 
     @Override
@@ -186,7 +174,7 @@ public class JavaApacheIcebergSink<R extends org.apache.wayang.basic.data.Record
         throw new UnsupportedOperationException();
     }
 
-    private org.apache.iceberg.data.Record wayangRecordToIcebergRecord(R wayangRecord) {
+    private org.apache.iceberg.data.Record wayangRecordToIcebergRecord(org.apache.wayang.basic.data.Record wayangRecord) {
         GenericRecord template = GenericRecord.create(this.schema);
         Record out = template.copy();
 
@@ -197,5 +185,9 @@ public class JavaApacheIcebergSink<R extends org.apache.wayang.basic.data.Record
         }
         return out;
     };
+
+    private boolean tableExists() {
+        return catalog.tableExists(tableIdentifier);
+    }
 
 }

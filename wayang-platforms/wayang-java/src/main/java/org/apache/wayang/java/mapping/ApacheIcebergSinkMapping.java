@@ -49,26 +49,14 @@ public class ApacheIcebergSinkMapping implements Mapping {
     }
 
     private SubplanPattern createSubplanPattern() {
-        ApacheIcebergSink icebergSink = new ApacheIcebergSink<>(null, null, null,
-                DataSetType.none().getDataUnitType().getTypeClass());
+        ApacheIcebergSink icebergSink = new ApacheIcebergSink(null, null, null, null);
         final OperatorPattern operatorPattern = new OperatorPattern<>(
                 "sink", icebergSink, false);
         return SubplanPattern.createSingleton(operatorPattern);
     }
 
     private ReplacementSubplanFactory createReplacementSubplanFactory() {
-        return new ReplacementSubplanFactory.OfSingleOperators<ApacheIcebergSink<?>>(
-                (matchedOperator, epoch) -> copyAny(matchedOperator).at(epoch));
+        return new ReplacementSubplanFactory.OfSingleOperators<ApacheIcebergSink>(
+                (matchedOperator, epoch) -> new JavaApacheIcebergSink(matchedOperator).at(epoch));
     }
-
-    private static JavaApacheIcebergSink<?> copyAny(ApacheIcebergSink<?> that) {
-        return copyUnchecked(that);
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T extends org.apache.wayang.basic.data.Record> JavaApacheIcebergSink<T> copyUnchecked(
-            ApacheIcebergSink<?> that) {
-        return new JavaApacheIcebergSink<>((ApacheIcebergSink<T>) that);
-    }
-
 }

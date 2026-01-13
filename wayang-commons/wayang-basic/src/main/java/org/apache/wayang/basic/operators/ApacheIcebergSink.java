@@ -24,6 +24,7 @@ import org.apache.iceberg.Schema;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.FileFormat;
+import org.apache.wayang.basic.data.Record;
 
 /**
  * This {@link UnarySink} writes all incoming data quanta to an iceberg table.
@@ -31,51 +32,29 @@ import org.apache.iceberg.FileFormat;
  * 
  * @param <T> Data Type if the incoming Data Quanta
  */
-public class ApacheIcebergSink<T> extends UnarySink<T> {
+public class ApacheIcebergSink extends UnarySink<org.apache.wayang.basic.data.Record> {
 
     protected final Catalog catalog;
     protected final Schema schema;
     protected final TableIdentifier tableIdentifier;
-    protected final Class<T> tClass;
+    protected final FileFormat outputFileFormat;
 
     /**
-     * Creates a new sink.
      *
      * @param catalog         Iceberg catalog used to resolve the target table; must
      *                        not be {@code null}
      * @param schema          Iceberg write schema; must be compatible with the
      *                        target table
      * @param tableIdentifier fully qualified identifier of the target table
-     * @param type            {@link DataSetType} of the incoming data quanta
+     * 
+     * @param outputFileFormat {@link FileFormat} the format of the output data files
      */
-    public ApacheIcebergSink(Catalog catalog, Schema schema, TableIdentifier tableIdentifier,
-            DataSetType<T> type) {
-
-        super(type);
+    public ApacheIcebergSink(Catalog catalog, Schema schema, TableIdentifier tableIdentifier, FileFormat outputFileFormat) {
+        super(DataSetType.createDefault(Record.class));
         this.catalog = catalog;
         this.schema = schema;
         this.tableIdentifier = tableIdentifier;
-        this.tClass = type.getDataUnitType().getTypeClass();
-
-    }
-
-    /**
-     * Creates a new sink.
-     *
-     * @param catalog         Iceberg catalog used to resolve the target table; must
-     *                        not be {@code null}
-     * @param schema          Iceberg write schema; must be compatible with the
-     *                        target table
-     * @param tableIdentifier fully qualified identifier of the target table
-     * @param typeClass       {@link Class} of incoming data quanta
-     */
-    public ApacheIcebergSink(Catalog catalog, Schema schema, TableIdentifier tableIdentifier,
-            Class<T> typeClass) {
-        super(DataSetType.createDefault(typeClass));
-        this.catalog = catalog;
-        this.schema = schema;
-        this.tableIdentifier = tableIdentifier;
-        this.tClass = typeClass;
+        this.outputFileFormat = outputFileFormat;
     }
 
     /**
@@ -83,22 +62,15 @@ public class ApacheIcebergSink<T> extends UnarySink<T> {
      *
      * @param that should be copied
      */
-    public ApacheIcebergSink(ApacheIcebergSink<T> that) {
+    public ApacheIcebergSink(ApacheIcebergSink that) {
         super(that);
         this.catalog = that.catalog;
         this.schema = that.schema;
         this.tableIdentifier = that.tableIdentifier;
-        this.tClass = that.tClass;
+        this.outputFileFormat = that.outputFileFormat;
     }
 
-    /**
-     * Returns the {@link FileFormat} used for writing.
-     * Subclasses should override this method to specify a concrete format.
-     * 
-     * @return the file format
-     * @throws UnsupportedOperationException if not overridden
-     */
-    public FileFormat getFileFormat() {
-        throw new UnsupportedOperationException("Subclasses must implement getFileFormat().");
+    public FileFormat getOutputFileFormat() {
+        return this.outputFileFormat;
     }
 }
