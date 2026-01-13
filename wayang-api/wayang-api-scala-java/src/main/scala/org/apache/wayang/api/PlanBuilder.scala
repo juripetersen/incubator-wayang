@@ -140,7 +140,15 @@ class PlanBuilder(private[api] val wayangContext: WayangContext, private var job
    */
   def readParquet(url: String, projection: Array[String] = null): DataQuanta[Record] = load(ParquetSource.create(url, projection))
 
-
+  /**
+   * Read an Apache Iceberg table and provide it as a dataset of [[Record]]s.
+   *
+   * @param catalog the Iceberg catalog containing the table
+   * @param tableIdentifier the identifier of the Iceberg table to read
+   * @param filterExpressions optional array of filter expressions to apply during the read
+   * @param projectionColumns optional array of column names to project (select specific columns)
+   * @return [[DataQuanta]] of [[Record]] for the Iceberg table
+   */
   def readApacheIcebergTable(
     catalog: org.apache.iceberg.catalog.Catalog, 
     tableIdentifier: org.apache.iceberg.catalog.TableIdentifier, 

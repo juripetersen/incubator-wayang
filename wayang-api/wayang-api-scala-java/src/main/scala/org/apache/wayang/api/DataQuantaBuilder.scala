@@ -499,6 +499,27 @@ trait DataQuantaBuilder[+This <: DataQuantaBuilder[_, Out], Out] extends Logging
     this.dataQuanta().writeTextFileJava(url, formatterUdf, udfLoadProfileEstimator)
   }
 
+    /**
+    * Feed the built [[DataQuanta]] into a [[org.apache.wayang.basic.operators.IcebergTableSink]]. This triggers
+    * execution of the constructed [[WayangPlan]].
+    *
+    * @param catalog          Iceberg Catalog
+    * @param schema           Iceberg Schema of the table to create
+    * @param tableIdentifier  Iceberg Table Identifier of the table to create
+    * @param outputFileFormat File format of the output data files    
+    * @return the collected data quanta
+    */
+
+  def writeIcebergTable(catalog: org.apache.iceberg.catalog.Catalog, 
+                      schema: org.apache.iceberg.Schema, 
+                      tableIdentifier: org.apache.iceberg.catalog.TableIdentifier,
+                      outputFileFormat: org.apache.iceberg.FileFormat,
+                      jobName: String): Unit = {
+    this.javaPlanBuilder.withJobName(jobName)
+    this.dataQuanta().writeIcebergTableJava(catalog, schema, tableIdentifier, outputFileFormat)
+
+  }
+
   /**
     * Feed the built [[DataQuanta]] into a [[org.apache.wayang.basic.operators.KafkaTopicSink]]. This triggers
     * execution of the constructed [[WayangPlan]].

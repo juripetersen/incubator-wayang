@@ -1013,7 +1013,6 @@ class DataQuanta[Out: ClassTag](val operator: ElementaryOperator, outputIndex: I
     this.planBuilder.buildAndExplain(toJson)
   }
 
-
   /**
     * Write the data quanta in this instance to a text file. Triggers execution.
     *
@@ -1027,6 +1026,44 @@ class DataQuanta[Out: ClassTag](val operator: ElementaryOperator, outputIndex: I
     writeTextFileJava(url, toSerializableFunction(formatterUdf), udfLoad)
   }
 
+  /**
+    * Write the data quanta in this instance to a iceberg table. Triggers execution.
+    *
+    * @param catalog          Iceberg Catalog
+    * @param schema           Iceberg Schema of the table to create
+    * @param tableIdentifier  Iceberg Table Identifier of the table to create
+    * @param outputFileFormat File format of the output data files
+    */
+
+  def writeIcebergTable(catalog: org.apache.iceberg.catalog.Catalog, 
+                      schema: org.apache.iceberg.Schema, 
+                      tableIdentifier: org.apache.iceberg.catalog.TableIdentifier,
+                      outputFileFormat: org.apache.iceberg.FileFormat): Unit = {
+    writeIcebergTableJava(catalog, schema, tableIdentifier, outputFileFormat)
+  }
+
+  /**
+    * Write the data quanta in this instance to a iceberg table. Triggers execution.
+    *
+    * @param catalog          Iceberg Catalog
+    * @param schema           Iceberg Schema of the table to create
+    * @param tableIdentifier  Iceberg Table Identifier of the table to create
+    * @param outputFileFormat File format of the output data files
+    */
+  def writeIcebergTableJava(
+    catalog: org.apache.iceberg.catalog.Catalog, 
+    schema: org.apache.iceberg.Schema, 
+    tableIdentifier: org.apache.iceberg.catalog.TableIdentifier,
+    outputFileFormat: org.apache.iceberg.FileFormat ): Unit = {
+    
+    val sink = new ApacheIcebergSink(catalog, schema, tableIdentifier, outputFileFormat)
+
+    sink.setName(s"*#-> Write to Iceberg Table Sink ")
+    this.connectTo(sink, 0)
+    this.planBuilder.sinks += sink
+    this.planBuilder.buildAndExecute()
+    this.planBuilder.sinks.clear()
+  }
  /**
   * Write the data quanta in this instance to a text file. Triggers execution.
   *
@@ -1089,6 +1126,8 @@ class DataQuanta[Out: ClassTag](val operator: ElementaryOperator, outputIndex: I
     this.planBuilder.buildAndExecute()
     this.planBuilder.sinks.clear()
   }
+
+
 
   /**
    * Write the data quanta in this instance to a Object file. Triggers execution.
