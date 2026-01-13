@@ -37,8 +37,10 @@ import org.apache.iceberg.data.IcebergGenerics.ScanBuilder;
 import org.apache.iceberg.expressions.Expression;
 import org.apache.iceberg.io.CloseableIterable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -82,12 +84,20 @@ public class ApacheIcebergSource extends UnarySource<Record> {
     public static ApacheIcebergSource create(Catalog catalog, TableIdentifier tableIdentifier,
             org.apache.iceberg.expressions.Expression[] whereExpressions,
             String[] columns) {
-        
-        return new ApacheIcebergSource(catalog, tableIdentifier, Arrays.asList(whereExpressions), Arrays.asList(columns));
+
+            List<org.apache.iceberg.expressions.Expression> whereList =
+            (whereExpressions == null) ? Collections.emptyList() : Arrays.asList(whereExpressions);
+
+            List<String> columnList =
+                 (columns == null) ? Collections.emptyList() : Arrays.asList(columns);
+
+        return new ApacheIcebergSource(catalog, tableIdentifier, whereList, columnList);
     }
 
     public ApacheIcebergSource(Catalog catalog, TableIdentifier tableIdentifier,
             Collection<Expression> whereExpressions, Collection<String> columns) {
+        
+        
         super(createOutputDataSetType(columns));
         this.catalog = catalog;
         this.tableIdentifier = tableIdentifier;
@@ -184,7 +194,10 @@ public class ApacheIcebergSource extends UnarySource<Record> {
      */
 
     private static DataSetType<Record> createOutputDataSetType(Collection<String> columnNames) {
-        String[] columnNamesAsArray = (String[]) columnNames.toArray();
+        if (columnNames == null) {
+            columnNames = new ArrayList<String>();
+        }
+        String[] columnNamesAsArray = columnNames.toArray(new String[0]);
         return columnNamesAsArray.length == 0 ? DataSetType.createDefault(Record.class)
                 : DataSetType.createDefault(new RecordType(columnNamesAsArray));
     }

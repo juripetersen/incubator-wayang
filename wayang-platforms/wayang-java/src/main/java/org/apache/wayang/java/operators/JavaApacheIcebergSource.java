@@ -43,7 +43,8 @@ import org.apache.wayang.java.execution.JavaExecutor;
 /**
  * This is execution operator implements the {@link ApacheIcebergSource}.
  */
-public class JavaApacheIcebergSource extends ApacheIcebergSource implements JavaExecutionOperator {
+public class JavaApacheIcebergSource 
+extends ApacheIcebergSource implements JavaExecutionOperator {
 
     /**
      * Creates a new Java Iceberg source instance.
@@ -65,7 +66,6 @@ public class JavaApacheIcebergSource extends ApacheIcebergSource implements Java
         super(ApacheIcebergSource.create(catalog, tableIdentifier, whereExpressions, columns));
     }
 
-    // TODO make support for parallel?
     /**
      * Creates a {@link Stream} of {@link org.apache.wayang.basic.data.Record}
      * objects
