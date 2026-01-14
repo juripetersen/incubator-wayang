@@ -48,6 +48,8 @@ import java.util.OptionalLong;
 import org.apache.commons.lang3.Validate;
 import org.apache.iceberg.FileScanTask;
 import org.apache.iceberg.Table;
+import org.apache.wayang.core.optimizer.cardinality.CardinalityEstimator;
+
 
 /**
  * This source reads an Iceberg Table and outputs the lines as
@@ -82,10 +84,10 @@ public class ApacheIcebergSource extends UnarySource<Record> {
      * @return a new {@link ApacheIcebergSource} instance
      */
     public static ApacheIcebergSource create(Catalog catalog, TableIdentifier tableIdentifier,
-            org.apache.iceberg.expressions.Expression[] whereExpressions,
+            Expression[] whereExpressions,
             String[] columns) {
 
-            List<org.apache.iceberg.expressions.Expression> whereList =
+            List<Expression> whereList =
             (whereExpressions == null) ? Collections.emptyList() : Arrays.asList(whereExpressions);
 
             List<String> columnList =
@@ -120,14 +122,14 @@ public class ApacheIcebergSource extends UnarySource<Record> {
     }
 
     @Override
-    public Optional<org.apache.wayang.core.optimizer.cardinality.CardinalityEstimator> createCardinalityEstimator(
+    public Optional<CardinalityEstimator> createCardinalityEstimator(
             final int outputIndex,
             final Configuration configuration) {
         Validate.inclusiveBetween(0, this.getNumOutputs() - 1, outputIndex);
         return Optional.of(new ApacheIcebergSource.CardinalityEstimator());
     }
 
-    protected class CardinalityEstimator implements org.apache.wayang.core.optimizer.cardinality.CardinalityEstimator {
+    protected class CardinalityEstimator implements CardinalityEstimator {
 
         public final CardinalityEstimate FALLBACK_ESTIMATE = new CardinalityEstimate(1000L, 100000000L, 0.7);
 
@@ -238,7 +240,7 @@ public class ApacheIcebergSource extends UnarySource<Record> {
      *
      * @return the loaded Iceberg table
      */
-    private org.apache.iceberg.Table getTable() {
+    private Table getTable() {
         if (this.cachedTable != null) {
             return this.cachedTable;
         }
