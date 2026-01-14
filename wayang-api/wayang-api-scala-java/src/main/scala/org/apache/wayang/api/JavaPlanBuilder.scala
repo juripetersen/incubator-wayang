@@ -32,6 +32,8 @@ import org.apache.wayang.core.plan.wayangplan._
 import org.apache.wayang.core.types.DataSetType
 
 import scala.reflect.ClassTag
+import org.apache.iceberg.catalog.{Catalog, TableIdentifier}
+import org.apache.iceberg.expressions.Expression
 
 /**
   * Utility to build and execute [[WayangPlan]]s.
@@ -89,9 +91,9 @@ class JavaPlanBuilder(wayangCtx: WayangContext, jobName: String) {
    * @return [[DataQuantaBuilder]] for the Iceberg table
    */
   def readApacheIcebergTable(
-    catalog: org.apache.iceberg.catalog.Catalog, 
-    tableIdentifier: org.apache.iceberg.catalog.TableIdentifier, 
-    filterExpressions: Array[org.apache.iceberg.expressions.Expression] = null, 
+    catalog: Catalog, 
+    tableIdentifier:TableIdentifier, 
+    filterExpressions: Array[Expression] = null, 
     projectionColumns: Array[String] = null): UnarySourceDataQuantaBuilder[UnarySourceDataQuantaBuilder[_, Record], Record] =
       createSourceBuilder(ApacheIcebergSource.create(catalog, tableIdentifier, filterExpressions, projectionColumns))(ClassTag(classOf[Record]))
 

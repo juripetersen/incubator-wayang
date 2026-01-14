@@ -40,6 +40,10 @@ import org.apache.wayang.core.types.DataSetType
 import org.apache.wayang.core.util.{Logging, ReflectionUtils, WayangCollections, Tuple => WayangTuple}
 import org.apache.wayang.core.plan.wayangplan.OutputSlot
 
+import org.apache.iceberg.Schema
+import org.apache.iceberg.FileFormat
+import org.apache.iceberg.catalog.{Catalog, TableIdentifier}
+
 
 
 import scala.collection.mutable.ListBuffer
@@ -510,10 +514,10 @@ trait DataQuantaBuilder[+This <: DataQuantaBuilder[_, Out], Out] extends Logging
     * @return the collected data quanta
     */
 
-  def writeIcebergTable(catalog: org.apache.iceberg.catalog.Catalog, 
-                      schema: org.apache.iceberg.Schema, 
-                      tableIdentifier: org.apache.iceberg.catalog.TableIdentifier,
-                      outputFileFormat: org.apache.iceberg.FileFormat,
+  def writeIcebergTable(catalog: Catalog, 
+                      schema: Schema, 
+                      tableIdentifier: TableIdentifier,
+                      outputFileFormat: FileFormat,
                       jobName: String): Unit = {
     this.javaPlanBuilder.withJobName(jobName)
     this.dataQuanta().writeIcebergTableJava(catalog, schema, tableIdentifier, outputFileFormat)

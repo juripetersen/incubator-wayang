@@ -34,6 +34,8 @@ import scala.collection.JavaConversions
 import scala.collection.mutable.ListBuffer
 import scala.language.implicitConversions
 import scala.reflect._
+import org.apache.iceberg.catalog.{Catalog, TableIdentifier}
+import org.apache.iceberg.expressions.Expression
 
 /**
   * Utility to build [[WayangPlan]]s.
@@ -154,9 +156,9 @@ class PlanBuilder(private[api] val wayangContext: WayangContext, private var job
    * @return [[DataQuanta]] of [[Record]] for the Iceberg table
    */
   def readApacheIcebergTable(
-    catalog: org.apache.iceberg.catalog.Catalog, 
-    tableIdentifier: org.apache.iceberg.catalog.TableIdentifier, 
-    filterExpressions: Array[org.apache.iceberg.expressions.Expression] = null, 
+    catalog: Catalog, 
+    tableIdentifier: TableIdentifier, 
+    filterExpressions: Array[Expression] = null, 
     projectionColumns: Array[String] = null): DataQuanta[Record] = load(ApacheIcebergSource.create(catalog, tableIdentifier, filterExpressions, projectionColumns))
 
  /**
