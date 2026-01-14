@@ -63,14 +63,21 @@ class JavaPlanBuilder(wayangCtx: WayangContext, jobName: String) {
     createSourceBuilder(new TextFileSource(url))(ClassTag(classOf[String]))
 
   /**
-   * Read a parquet file and provide it as a dataset of [[Record]]s.
+   * Read a parquet file and optionally keep it backed by Spark Datasets.
    *
    * @param url the URL of the Parquet file
    * @param projection the projection, if any
+   * @param preferDataset when {@code true}, emit a Dataset-backed channel
    * @return [[DataQuantaBuilder]] for the file
    */
-  def readParquet(url: String, projection: Array[String] = null): UnarySourceDataQuantaBuilder[UnarySourceDataQuantaBuilder[_, Record], Record] =
-    createSourceBuilder(ParquetSource.create(url, projection))(ClassTag(classOf[Record]))
+  def readParquet(url: String,
+                  projection: Array[String]): UnarySourceDataQuantaBuilder[UnarySourceDataQuantaBuilder[_, Record], Record] =
+    readParquet(url, projection, preferDataset = false)
+
+  def readParquet(url: String,
+                  projection: Array[String] = null,
+                  preferDataset: Boolean = false): UnarySourceDataQuantaBuilder[UnarySourceDataQuantaBuilder[_, Record], Record] =
+    createSourceBuilder(ParquetSource.create(url, projection).preferDatasetOutput(preferDataset))(ClassTag(classOf[Record]))
 
   /**
    * Read an Apache Iceberg table and provide it as a dataset of [[Record]]s.

@@ -36,7 +36,7 @@ import org.apache.wayang.core.optimizer.costs.LoadProfileEstimator
 import org.apache.wayang.core.plan.wayangplan._
 import org.apache.wayang.core.platform.Platform
 import org.apache.wayang.core.util.{Tuple => WayangTuple}
-import org.apache.wayang.basic.data.{Tuple2 => WayangTuple2}
+import org.apache.wayang.basic.data.{Record, Tuple2 => WayangTuple2}
 import org.apache.wayang.basic.model.{DLModel, LogisticRegressionModel,DecisionTreeRegressionModel};
 import org.apache.wayang.commons.util.profiledb.model.Experiment
 import com.google.protobuf.ByteString;
@@ -46,6 +46,11 @@ import org.tensorflow.ndarray.NdArray
 import scala.collection.JavaConversions
 import scala.collection.JavaConversions._
 import scala.reflect._
+
+import org.apache.iceberg.Schema
+import org.apache.iceberg.FileFormat
+import org.apache.iceberg.catalog.{Catalog, TableIdentifier}
+
 
 /**
   * Represents an intermediate result/data flow edge in a [[WayangPlan]].
@@ -1035,10 +1040,10 @@ class DataQuanta[Out: ClassTag](val operator: ElementaryOperator, outputIndex: I
     * @param outputFileFormat File format of the output data files
     */
 
-  def writeIcebergTable(catalog: org.apache.iceberg.catalog.Catalog, 
-                      schema: org.apache.iceberg.Schema, 
-                      tableIdentifier: org.apache.iceberg.catalog.TableIdentifier,
-                      outputFileFormat: org.apache.iceberg.FileFormat): Unit = {
+  def writeIcebergTable(catalog: Catalog, 
+                      schema: Schema, 
+                      tableIdentifier: TableIdentifier,
+                      outputFileFormat: FileFormat): Unit = {
     writeIcebergTableJava(catalog, schema, tableIdentifier, outputFileFormat)
   }
 
@@ -1051,10 +1056,10 @@ class DataQuanta[Out: ClassTag](val operator: ElementaryOperator, outputIndex: I
     * @param outputFileFormat File format of the output data files
     */
   def writeIcebergTableJava(
-    catalog: org.apache.iceberg.catalog.Catalog, 
-    schema: org.apache.iceberg.Schema, 
-    tableIdentifier: org.apache.iceberg.catalog.TableIdentifier,
-    outputFileFormat: org.apache.iceberg.FileFormat ): Unit = {
+    catalog: Catalog, 
+    schema: Schema, 
+    tableIdentifier: TableIdentifier,
+    outputFileFormat: FileFormat ): Unit = {
     
     val sink = new ApacheIcebergSink(catalog, schema, tableIdentifier, outputFileFormat)
 
@@ -1064,6 +1069,11 @@ class DataQuanta[Out: ClassTag](val operator: ElementaryOperator, outputIndex: I
     this.planBuilder.buildAndExecute()
     this.planBuilder.sinks.clear()
   }
+  def writeParquet(url: String,
+                   overwrite: Boolean = false,
+                   preferDataset: Boolean = false)(implicit ev: Out =:= Record): Unit =
+    writeParquetJava(url, overwrite, preferDataset)
+
  /**
   * Write the data quanta in this instance to a text file. Triggers execution.
   *
@@ -1128,6 +1138,15 @@ class DataQuanta[Out: ClassTag](val operator: ElementaryOperator, outputIndex: I
   }
 
 
+  private def writeParquetJava(url: String, overwrite: Boolean, preferDataset: Boolean)(implicit ev: Out =:= Record): Unit = {
+    val _ = ev
+    val sink = new ParquetSink(url, overwrite, preferDataset)
+    sink.setName(s"Write parquet $url")
+    this.connectTo(sink, 0)
+    this.planBuilder.sinks += sink
+    this.planBuilder.buildAndExecute()
+    this.planBuilder.sinks.clear()
+  }
 
   /**
    * Write the data quanta in this instance to a Object file. Triggers execution.
