@@ -117,10 +117,10 @@ extends ApacheIcebergSource implements JavaExecutionOperator {
 
             ExecutionLineageNode prepareLineageNode = new ExecutionLineageNode(operatorContext);
             prepareLineageNode.add(LoadProfileEstimators.createFromSpecification(
-                    "wayang.java.parquetsource.load.prepare", javaExecutor.getConfiguration()));
+                    "wayang.java.apacheicebergsource.load.prepare", javaExecutor.getConfiguration()));
             ExecutionLineageNode mainLineageNode = new ExecutionLineageNode(operatorContext);
             mainLineageNode.add(LoadProfileEstimators.createFromSpecification(
-                    "wayang.java.parquetsource.load.main", javaExecutor.getConfiguration()));
+                    "wayang.java.apacheicebergsource.load.main", javaExecutor.getConfiguration()));
 
             outputs[0].getLineage().addPredecessor(mainLineageNode);
 
