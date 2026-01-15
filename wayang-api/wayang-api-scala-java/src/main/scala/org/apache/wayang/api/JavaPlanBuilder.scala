@@ -92,7 +92,7 @@ class JavaPlanBuilder(wayangCtx: WayangContext, jobName: String) {
    */
   def readApacheIcebergTable(
     catalog: Catalog, 
-    tableIdentifier:TableIdentifier, 
+    tableIdentifier: TableIdentifier, 
     filterExpressions: Array[Expression] = null, 
     projectionColumns: Array[String] = null): UnarySourceDataQuantaBuilder[UnarySourceDataQuantaBuilder[_, Record], Record] =
       createSourceBuilder(ApacheIcebergSource.create(catalog, tableIdentifier, filterExpressions, projectionColumns))(ClassTag(classOf[Record]))
