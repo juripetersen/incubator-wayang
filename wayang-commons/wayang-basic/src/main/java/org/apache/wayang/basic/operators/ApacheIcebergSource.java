@@ -122,14 +122,14 @@ public class ApacheIcebergSource extends UnarySource<Record> {
     }
 
     @Override
-    public Optional<CardinalityEstimator> createCardinalityEstimator(
+    public Optional<org.apache.wayang.core.optimizer.cardinality.CardinalityEstimator> createCardinalityEstimator(
             final int outputIndex,
             final Configuration configuration) {
         Validate.inclusiveBetween(0, this.getNumOutputs() - 1, outputIndex);
         return Optional.of(new ApacheIcebergSource.CardinalityEstimator());
     }
 
-    protected class CardinalityEstimator implements CardinalityEstimator {
+    protected class CardinalityEstimator implements org.apache.wayang.core.optimizer.cardinality.CardinalityEstimator {
 
         public final CardinalityEstimate FALLBACK_ESTIMATE = new CardinalityEstimate(1000L, 100000000L, 0.7);
 
