@@ -18,15 +18,17 @@
 package org.apache.wayang.api.sql.calcite.rel;
 
 import com.google.common.collect.ImmutableList;
+
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
+
 import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
 
+import java.util.HashSet;
 import java.util.List;
 
 public class WayangProject extends Project implements WayangRel {
@@ -36,7 +38,8 @@ public class WayangProject extends Project implements WayangRel {
             RelNode input,
             List<? extends RexNode> projects,
             RelDataType rowType) {
-        super(cluster, traits, ImmutableList.of(), input, projects, rowType);
+        super(cluster, traits, ImmutableList.of(), input, projects, rowType, new HashSet<>());
+
         assert getConvention() instanceof WayangConvention;
     }
 
