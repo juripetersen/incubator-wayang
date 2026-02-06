@@ -26,6 +26,7 @@ import java.util.Objects;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.NlsString;
 import org.apache.wayang.basic.data.Record;
@@ -37,7 +38,7 @@ import com.google.common.collect.Range;
 
 public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredicate<Record> {
     class FilterCallTreeFactory implements CallTreeFactory {
-        public SerializableFunction<List<Object>, Object> deriveOperation(final SqlKind kind) {
+        public SerializableFunction<List<Object>, Object> deriveOperation(final SqlKind kind, final SqlTypeName returnType) {
             return input -> switch (kind) {
                 case NOT -> !(boolean) input.get(0);
                 case IS_NOT_NULL -> !isEqualTo(input.get(0), null);
@@ -55,6 +56,8 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
                 case OR -> input.stream().anyMatch(obj -> Boolean.class.cast(obj).booleanValue());
                 case MINUS -> widenToDouble.apply(input.get(0)) - widenToDouble.apply(input.get(1));
                 case PLUS -> widenToDouble.apply(input.get(0)) + widenToDouble.apply(input.get(1));
+                // TODO: may need better support for CASTing in the future. See sqlCast() in this file.
+                case CAST -> input.get(0) instanceof Number ? widenToDouble.apply(input.get(0)) : ensureComparable.apply(input.get(0));
                 case SEARCH -> {
                     if (input.get(0) instanceof final ImmutableRangeSet range) {
                         assert input.get(1) instanceof Comparable
@@ -82,13 +85,23 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
         }
 
         /**
+         * Java implementation of SQL cast.
+         * @param input input field
+         * @param type the new return type of the field
+         * @return Java-type equivalent to {@link SqlTypeName} counterpart.
+         */
+        private static Object sqlCast(Object input, SqlTypeName type){
+            throw new UnsupportedOperationException("sqlCasting is not yet implemented.");
+        }
+
+        /**
          * Java equivalent of SQL like clauses
          * 
          * @param s1
          * @param s2
          * @return true if {@code s1} like {@code s2}
          */
-        private boolean like(final String s1, final String s2) {
+        private static boolean like(final String s1, final String s2) {
             return new SqlFunctions.LikeFunction().like(s1, s2);
         }
 
@@ -99,7 +112,7 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
          * @param o2
          * @return true if {@code o1 > o2}
          */
-        private boolean isGreaterThan(final Object o1, final Object o2) {
+        private static boolean isGreaterThan(final Object o1, final Object o2) {
             return ensureComparable.apply(o1).compareTo(ensureComparable.apply(o2)) > 0;
         }
 
@@ -110,7 +123,7 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
          * @param o2
          * @return true if {@code o1 < o2}
          */
-        private boolean isLessThan(final Object o1, final Object o2) {
+        private static boolean isLessThan(final Object o1, final Object o2) {
             return ensureComparable.apply(o1).compareTo(ensureComparable.apply(o2)) < 0;
         }
 
@@ -121,7 +134,7 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
          * @param o2
          * @return true if {@code o1 == o2}
          */
-        private boolean isEqualTo(final Object o1, final Object o2) {
+        private static boolean isEqualTo(final Object o1, final Object o2) {
             return Objects.equals(ensureComparable.apply(o1), ensureComparable.apply(o2));
         }
     }
@@ -133,7 +146,7 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
      * 
      * @throws UnsupportedOperationException if conversion was not possible
      */
-    final SerializableFunction<Object, Double> widenToDouble = field -> {
+    final static SerializableFunction<Object, Double> widenToDouble = field -> {
         if (field instanceof final Number number) {
             return number.doubleValue();
         } else if (field instanceof final Date date) {
@@ -148,7 +161,7 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
     /**
      * Widening conversions, all numbers to double
      */
-    final SerializableFunction<Object, Comparable> ensureComparable = field -> {
+    final static SerializableFunction<Object, Comparable> ensureComparable = field -> {
         if (field instanceof final Number number) {
             return number.doubleValue();
         } else if (field instanceof final Date date) {

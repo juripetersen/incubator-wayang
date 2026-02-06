@@ -22,7 +22,7 @@ import java.util.List;
 
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
-
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.wayang.core.function.FunctionDescriptor;
 import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
 import org.apache.wayang.basic.data.Record;
@@ -38,7 +38,7 @@ public class ProjectMapFuncImpl implements
     }
 
     class ProjectCallTreeFactory implements CallTreeFactory {
-        public SerializableFunction<List<Object>, Object> deriveOperation(final SqlKind kind) {
+        public SerializableFunction<List<Object>, Object> deriveOperation(final SqlKind kind, final SqlTypeName returnType) {
             return input -> 
                 switch (kind) {
                     case PLUS   -> asDouble(input.get(0)) + asDouble(input.get(1));
