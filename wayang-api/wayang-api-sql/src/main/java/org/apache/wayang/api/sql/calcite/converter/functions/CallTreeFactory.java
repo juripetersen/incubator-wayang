@@ -27,6 +27,7 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Sarg;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
@@ -55,10 +56,11 @@ interface CallTreeFactory extends Serializable {
      * serializable function
      * 
      * @param kind {@link SqlKind} from {@link RexCall} SqlOperator
+     * @param returnType return type of the {@link RexCall}
      * @return a serializable function of +, -, * or /
      * @throws UnsupportedOperationException on unrecognized {@link SqlKind}
      */
-    public SerializableFunction<List<Object>, Object> deriveOperation(final SqlKind kind);
+    public SerializableFunction<List<Object>, Object> deriveOperation(final SqlKind kind, final SqlTypeName returnType);
 }
 
 interface Node extends Serializable {
@@ -71,7 +73,7 @@ final class Call implements Node {
 
     protected Call(final RexCall call, final CallTreeFactory tree) {
         operands = call.getOperands().stream().map(tree::fromRexNode).toList();
-        operation = tree.deriveOperation(call.getKind());
+        operation = tree.deriveOperation(call.getKind(), call.getType().getSqlTypeName());
     }
 
     @Override

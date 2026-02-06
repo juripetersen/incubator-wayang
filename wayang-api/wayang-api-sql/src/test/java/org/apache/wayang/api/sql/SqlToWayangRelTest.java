@@ -75,12 +75,11 @@ import org.apache.wayang.api.sql.calcite.optimizer.Optimizer;
 import org.apache.wayang.api.sql.calcite.rules.WayangRules;
 import org.apache.wayang.api.sql.calcite.schema.SchemaUtils;
 import org.apache.wayang.api.sql.calcite.utils.ModelParser;
+import org.apache.wayang.api.sql.calcite.utils.PrintUtils;
 import org.apache.wayang.api.sql.context.SqlContext;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.core.api.Configuration;
-import org.apache.wayang.core.api.Job;
-import org.apache.wayang.core.api.WayangContext;
 import org.apache.wayang.core.function.FunctionDescriptor.SerializablePredicate;
 import org.apache.wayang.core.mapping.PlanTransformation;
 import org.apache.wayang.core.plan.wayangplan.Operator;
@@ -102,8 +101,7 @@ class SqlToWayangRelTest {
 
     /**
      * Method for building {@link WayangPlan}s useful for testing, benchmarking and
-     * other
-     * usages where you want to handle the intermediate {@link WayangPlan}
+     * other usages where you want to handle the intermediate {@link WayangPlan}
      *
      * @param sql     sql query string with the {@code ;} cut off
      * @param udfJars
@@ -116,36 +114,46 @@ class SqlToWayangRelTest {
         final Properties configProperties = Optimizer.ConfigProperties.getDefaults();
         final RelDataTypeFactory relDataTypeFactory = new JavaTypeFactoryImpl();
 
-        final Optimizer optimizer = Optimizer.create(
-                SchemaUtils.getSchema(context.getConfiguration()),
-                configProperties,
-                relDataTypeFactory);
+        final Optimizer optimizer = Optimizer.create(SchemaUtils.getSchema(context.getConfiguration()),
+                configProperties, relDataTypeFactory);
 
         final SqlNode sqlNode = optimizer.parseSql(sql);
         final SqlNode validatedSqlNode = optimizer.validate(sqlNode);
         final RelNode relNode = optimizer.convert(validatedSqlNode);
 
-        final RuleSet rules = RuleSets.ofList(
-                CoreRules.FILTER_INTO_JOIN,
-                WayangRules.WAYANG_TABLESCAN_RULE,
-                WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
-                WayangRules.WAYANG_PROJECT_RULE,
-                WayangRules.WAYANG_FILTER_RULE,
-                WayangRules.WAYANG_JOIN_RULE,
-                WayangRules.WAYANG_AGGREGATE_RULE,
+        final RuleSet rules = RuleSets.ofList(CoreRules.FILTER_INTO_JOIN, WayangRules.WAYANG_TABLESCAN_RULE,
+                WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE, WayangRules.WAYANG_PROJECT_RULE,
+                WayangRules.WAYANG_FILTER_RULE, WayangRules.WAYANG_JOIN_RULE, WayangRules.WAYANG_AGGREGATE_RULE,
                 WayangRules.WAYANG_SORT_RULE);
 
-        final RelNode wayangRel = optimizer.optimize(
-                relNode,
-                relNode.getTraitSet().plus(WayangConvention.INSTANCE),
+        final RelNode wayangRel = optimizer.optimize(relNode, relNode.getTraitSet().plus(WayangConvention.INSTANCE),
                 rules);
 
         final Collection<Record> collector = new ArrayList<>();
 
-        final WayangPlan wayangPlan = Optimizer.convertWithConfig(wayangRel, context.getConfiguration(),
-                collector);
+        final WayangPlan wayangPlan = Optimizer.convertWithConfig(wayangRel, context.getConfiguration(), collector);
 
         return new Tuple2<>(collector, wayangPlan);
+    }
+
+    @Test
+    void javaFilterWithCast() throws Exception {
+        final SqlContext sqlContext = this.createSqlContext("/data/largeLeftTableIndex.csv");
+        final Tuple2<Collection<Record>, WayangPlan> t = this.buildCollectorAndWayangPlan(sqlContext,
+                "SELECT * FROM fs.largeLeftTableIndex WHERE CAST(NAMEB AS VARCHAR) = 'test1'");
+        final Collection<Record> result = t.field0;
+        final WayangPlan wayangPlan = t.field1;
+
+        // except reduce by
+        PlanTraversal.upstream().traverse(wayangPlan.getSinks()).getTraversedNodes()
+                .forEach(node -> node.addTargetPlatform(Java.platform()));
+
+        sqlContext.execute(wayangPlan);
+
+        PrintUtils.print("", wayangPlan);
+        System.out.println("results: " + result);
+        assertTrue(!result.isEmpty());
+        assertTrue(result.stream().allMatch(field -> field.getField(1).equals("test1")));
     }
 
     @Test
@@ -158,10 +166,8 @@ class SqlToWayangRelTest {
         final RelOptCluster cluster = RelOptCluster.create(planner, rexBuilder);
 
         final SchemaPlus rootSchema = Frameworks.createRootSchema(true);
-        final RelDataType rowType = new Builder(typeFactory)
-                .add("ID", typeFactory.createJavaType(Integer.class))
-                .add("NAME", typeFactory.createJavaType(String.class))
-                .build();
+        final RelDataType rowType = new Builder(typeFactory).add("ID", typeFactory.createJavaType(Integer.class))
+                .add("NAME", typeFactory.createJavaType(String.class)).build();
 
         rootSchema.add("T1", new AbstractTable() {
             @Override
@@ -170,11 +176,8 @@ class SqlToWayangRelTest {
             }
         });
 
-        final RelOptSchema relOptSchema = new CalciteCatalogReader(
-                CalciteSchema.from(rootSchema),
-                CalciteSchema.from(rootSchema).path(null),
-                typeFactory,
-                mock());
+        final RelOptSchema relOptSchema = new CalciteCatalogReader(CalciteSchema.from(rootSchema),
+                CalciteSchema.from(rootSchema).path(null), typeFactory, mock());
 
         final RelOptTable t1 = relOptSchema.getTableForMember(Arrays.asList("T1"));
 
@@ -187,40 +190,34 @@ class SqlToWayangRelTest {
         final Properties configProperties = Optimizer.ConfigProperties.getDefaults();
         final RelDataTypeFactory relDataTypeFactory = new JavaTypeFactoryImpl();
 
-        final Optimizer optimizer = Optimizer.create(
-                CalciteSchema.from(rootSchema),
-                configProperties,
+        final Optimizer optimizer = Optimizer.create(CalciteSchema.from(rootSchema), configProperties,
                 relDataTypeFactory);
 
         final SqlNode validatedSqlNode = optimizer.validate(sqlNode);
         final RelNode relNode = optimizer.convert(validatedSqlNode);
 
-        final RuleSet rules = RuleSets.ofList(
-                CoreRules.FILTER_INTO_JOIN,
-                WayangRules.WAYANG_TABLESCAN_RULE,
-                WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
-                WayangRules.WAYANG_PROJECT_RULE,
-                WayangRules.WAYANG_FILTER_RULE,
-                WayangRules.WAYANG_JOIN_RULE,
-                WayangRules.WAYANG_AGGREGATE_RULE,
+        final RuleSet rules = RuleSets.ofList(CoreRules.FILTER_INTO_JOIN, WayangRules.WAYANG_TABLESCAN_RULE,
+                WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE, WayangRules.WAYANG_PROJECT_RULE,
+                WayangRules.WAYANG_FILTER_RULE, WayangRules.WAYANG_JOIN_RULE, WayangRules.WAYANG_AGGREGATE_RULE,
                 WayangRules.WAYANG_SORT_RULE);
 
-        final RelNode wayangRel = optimizer.optimize(
-                relNode,
-                relNode.getTraitSet().plus(WayangConvention.INSTANCE),
+        final RelNode wayangRel = optimizer.optimize(relNode, relNode.getTraitSet().plus(WayangConvention.INSTANCE),
                 rules);
 
         final WayangPlan plan = Optimizer.convert(wayangRel, new ArrayList<Record>());
 
         final ProjectionMapping projectionMapping = new ProjectionMapping();
-        final PlanTransformation projectionTransformation = projectionMapping.getTransformations().iterator().next().thatReplaces();
+        final PlanTransformation projectionTransformation = projectionMapping.getTransformations().iterator().next()
+                .thatReplaces();
 
         plan.applyTransformations(List.of(projectionTransformation));
 
         final Collection<Operator> operators = PlanTraversal.upstream().traverse(plan.getSinks()).getTraversedNodes();
 
-        final JdbcTableSource table = operators.stream().filter(op -> op instanceof JdbcTableSource).map(JdbcTableSource.class::cast).findFirst().orElseThrow();
-        final JdbcProjectionOperator projection = operators.stream().filter(op -> op instanceof JdbcProjectionOperator).map(JdbcProjectionOperator.class::cast).findFirst().orElseThrow();
+        final JdbcTableSource table = operators.stream().filter(op -> op instanceof JdbcTableSource)
+                .map(JdbcTableSource.class::cast).findFirst().orElseThrow();
+        final JdbcProjectionOperator projection = operators.stream().filter(op -> op instanceof JdbcProjectionOperator)
+                .map(JdbcProjectionOperator.class::cast).findFirst().orElseThrow();
 
         final JdbcExecutor jdbcExecutor = mock();
         final StringBuilder query = JdbcExecutor.createSqlString(jdbcExecutor, table, List.of(), projection, List.of());
@@ -242,8 +239,8 @@ class SqlToWayangRelTest {
 
         sqlContext.execute(wayangPlan);
 
-        assertTrue(result.stream()
-                .anyMatch(rec -> rec.equals(new Record("test1", "test1", "test2", "test1", "test1"))));
+        assertTrue(
+                result.stream().anyMatch(rec -> rec.equals(new Record("test1", "test1", "test2", "test1", "test1"))));
     }
 
     @Test
@@ -368,8 +365,7 @@ class SqlToWayangRelTest {
     void javaReduceBy() throws Exception {
         final SqlContext sqlContext = createSqlContext("/data/largeLeftTableIndex.csv");
 
-        final Tuple2<Collection<Record>, WayangPlan> t = this.buildCollectorAndWayangPlan(
-                sqlContext,
+        final Tuple2<Collection<Record>, WayangPlan> t = this.buildCollectorAndWayangPlan(sqlContext,
                 "select exampleSmallA.COLA, count(*) from fs.exampleSmallA group by exampleSmallA.COLA");
 
         final Collection<Record> result = t.field0;
@@ -387,8 +383,7 @@ class SqlToWayangRelTest {
     void javaCrossJoin() throws Exception {
         final SqlContext sqlContext = createSqlContext("/data/largeLeftTableIndex.csv");
 
-        final Tuple2<Collection<Record>, WayangPlan> t = this.buildCollectorAndWayangPlan(
-                sqlContext,
+        final Tuple2<Collection<Record>, WayangPlan> t = this.buildCollectorAndWayangPlan(sqlContext,
                 "select * from fs.exampleSmallA cross join fs.exampleSmallB");
 
         final Collection<Record> result = t.field0;
@@ -396,12 +391,10 @@ class SqlToWayangRelTest {
 
         sqlContext.execute(wayangPlan);
 
-        final List<Record> shouldBe = List.of(
+        final List<Record> shouldBe = List.of(new Record("item1", "item2", "item1", "item2", "item3"),
                 new Record("item1", "item2", "item1", "item2", "item3"),
                 new Record("item1", "item2", "item1", "item2", "item3"),
-                new Record("item1", "item2", "item1", "item2", "item3"),
-                new Record("item1", "item2", "item1", "item2", "item3"),
-                new Record("item1", "item2", "x", "x", "x"),
+                new Record("item1", "item2", "item1", "item2", "item3"), new Record("item1", "item2", "x", "x", "x"),
                 new Record("item1", "item2", "x", "x", "x"));
 
         final Map<Record, Integer> resultTally = result.stream()
@@ -527,8 +520,7 @@ class SqlToWayangRelTest {
         final WayangPlan wayangPlan = t.field1;
         sqlContext.execute(wayangPlan);
 
-        final List<Record> shouldBe = List.of(
-                new Record("test1", "test1", "test2", "test1", "test1", "test2"),
+        final List<Record> shouldBe = List.of(new Record("test1", "test1", "test2", "test1", "test1", "test2"),
                 new Record("test2", "", "test2", "", "test2", "test2"),
                 new Record("", "test2", "test2", "test2", "", "test2"));
 
@@ -558,8 +550,7 @@ class SqlToWayangRelTest {
         final WayangPlan wayangPlan = t.field1;
         sqlContext.execute(wayangPlan);
 
-        final List<Record> shouldBe = List.of(
-                new Record("test1", "test1", "test2", "test1", "test1", "test2"),
+        final List<Record> shouldBe = List.of(new Record("test1", "test1", "test2", "test1", "test1", "test2"),
                 new Record("test2", "", "test2", "", "test2", "test2"),
                 new Record("", "test2", "test2", "test2", "", "test2"));
 
@@ -626,8 +617,7 @@ class SqlToWayangRelTest {
 
         sqlContext.execute(wayangPlan);
 
-        final List<Record> shouldBe = List.of(
-                new Record("test1", "test1", "test2", "test1", "test1", "test2"),
+        final List<Record> shouldBe = List.of(new Record("test1", "test1", "test2", "test1", "test1", "test2"),
                 new Record("test2", "", "test2", "", "test2", "test2"),
                 new Record("", "test2", "test2", "test2", "", "test2"));
 
@@ -645,8 +635,7 @@ class SqlToWayangRelTest {
 
         final RelDataTypeFactory typeFactory = rb.getTypeFactory();
         final RelDataType intType = typeFactory.createSqlType(SqlTypeName.INTEGER);
-        final RelDataType rowType = typeFactory.createStructType(
-                Arrays.asList(intType, intType, intType),
+        final RelDataType rowType = typeFactory.createStructType(Arrays.asList(intType, intType, intType),
                 Arrays.asList("x", "b", "y"));
 
         final RexNode inputRefX = rb.makeInputRef(rowType, 0);
@@ -692,8 +681,7 @@ class SqlToWayangRelTest {
         objectOutputStream.writeObject(fpImpl);
         objectOutputStream.close();
 
-        final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(
-                byteArrayOutputStream.toByteArray());
+        final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
         final ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
         final Object deserializedObject = objectInputStream.readObject();
         objectInputStream.close();
@@ -742,10 +730,8 @@ class SqlToWayangRelTest {
                 "          \"type\": \"custom\",\r\n" + //
                 "          \"factory\": \"org.apache.calcite.adapter.file.FileSchemaFactory\",\r\n" + //
                 "          \"operand\": {\r\n" + //
-                "            \"directory\": \"" + "/" + this.getClass().getResource("/data").getPath()
-                + "\",\r\n" + //
-                "            \"delimiter\": \"|\"" +
-                "          }\r\n" + //
+                "            \"directory\": \"" + "/" + this.getClass().getResource("/data").getPath() + "\",\r\n" + //
+                "            \"delimiter\": \"|\"" + "          }\r\n" + //
                 "        }\r\n" + //
                 "      ]\r\n" + //
                 "    }\r\n" + //
@@ -753,8 +739,7 @@ class SqlToWayangRelTest {
 
         final JsonNode calciteModelJSON = new ObjectMapper().readTree(calciteModel);
 
-        final Configuration configuration = new ModelParser(new Configuration(), calciteModelJSON)
-                .setProperties();
+        final Configuration configuration = new ModelParser(new Configuration(), calciteModelJSON).setProperties();
         assertNotNull(configuration, "Could not get configuration with calcite model: " + calciteModel);
 
         final String tableResourceName = "/data/exampleDelimiter.csv";
@@ -765,13 +750,9 @@ class SqlToWayangRelTest {
 
         configuration.setProperty("wayang.fs.table.url", dataPath);
 
-        configuration.setProperty(
-                "wayang.ml.executions.file",
-                "mle" + ".txt");
+        configuration.setProperty("wayang.ml.executions.file", "mle" + ".txt");
 
-        configuration.setProperty(
-                "wayang.ml.optimizations.file",
-                "mlo" + ".txt");
+        configuration.setProperty("wayang.ml.optimizations.file", "mlo" + ".txt");
 
         configuration.setProperty("wayang.ml.experience.enabled", "false");
 
@@ -791,28 +772,17 @@ class SqlToWayangRelTest {
 
     private SqlContext createSqlContext(final String tableResourceName)
             throws IOException, ParseException, SQLException {
-        final String calciteModel = "{\r\n" +
-                "    \"calcite\": {\r\n" +
-                "      \"version\": \"1.0\",\r\n" +
-                "      \"defaultSchema\": \"wayang\",\r\n" +
-                "      \"schemas\": [\r\n" +
-                "        {\r\n" +
-                "          \"name\": \"fs\",\r\n" +
-                "          \"type\": \"custom\",\r\n" +
-                "          \"factory\": \"org.apache.calcite.adapter.file.FileSchemaFactory\",\r\n" +
-                "          \"operand\": {\r\n" +
-                "            \"directory\": \"" + "/" + this.getClass().getResource("/data").getPath()
-                + "\"\r\n" +
-                "          }\r\n" +
-                "        }\r\n" +
-                "      ]\r\n" +
-                "    }\r\n" +
-                "  }";
+        final String calciteModel = "{\r\n" + "    \"calcite\": {\r\n" + "      \"version\": \"1.0\",\r\n"
+                + "      \"defaultSchema\": \"wayang\",\r\n" + "      \"schemas\": [\r\n" + "        {\r\n"
+                + "          \"name\": \"fs\",\r\n" + "          \"type\": \"custom\",\r\n"
+                + "          \"factory\": \"org.apache.calcite.adapter.file.FileSchemaFactory\",\r\n"
+                + "          \"operand\": {\r\n" + "            \"directory\": \"" + "/"
+                + this.getClass().getResource("/data").getPath() + "\"\r\n" + "          }\r\n" + "        }\r\n"
+                + "      ]\r\n" + "    }\r\n" + "  }";
 
         final JsonNode calciteModelJSON = new ObjectMapper().readTree(calciteModel);
 
-        final Configuration configuration = new ModelParser(new Configuration(), calciteModelJSON)
-                .setProperties();
+        final Configuration configuration = new ModelParser(new Configuration(), calciteModelJSON).setProperties();
         assertNotNull(configuration, "Could not get configuration with calcite model: " + calciteModel);
 
         final String dataPath = this.getClass().getResource(tableResourceName).getPath();
@@ -821,13 +791,9 @@ class SqlToWayangRelTest {
 
         configuration.setProperty("wayang.fs.table.url", dataPath);
 
-        configuration.setProperty(
-                "wayang.ml.executions.file",
-                "mle" + ".txt");
+        configuration.setProperty("wayang.ml.executions.file", "mle" + ".txt");
 
-        configuration.setProperty(
-                "wayang.ml.optimizations.file",
-                "mlo" + ".txt");
+        configuration.setProperty("wayang.ml.optimizations.file", "mlo" + ".txt");
 
         configuration.setProperty("wayang.ml.experience.enabled", "false");
 
