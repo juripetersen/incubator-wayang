@@ -75,7 +75,6 @@ import org.apache.wayang.api.sql.calcite.optimizer.Optimizer;
 import org.apache.wayang.api.sql.calcite.rules.WayangRules;
 import org.apache.wayang.api.sql.calcite.schema.SchemaUtils;
 import org.apache.wayang.api.sql.calcite.utils.ModelParser;
-import org.apache.wayang.api.sql.calcite.utils.PrintUtils;
 import org.apache.wayang.api.sql.context.SqlContext;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.data.Tuple2;
@@ -150,8 +149,6 @@ class SqlToWayangRelTest {
 
         sqlContext.execute(wayangPlan);
 
-        PrintUtils.print("", wayangPlan);
-        System.out.println("results: " + result);
         assertTrue(!result.isEmpty());
         assertTrue(result.stream().allMatch(field -> field.getField(1).equals("test1")));
     }
