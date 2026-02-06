@@ -136,6 +136,25 @@ class SqlToWayangRelTest {
     }
 
     @Test
+    void javaFilterWithCastUsingNumbers() throws Exception {
+        final SqlContext sqlContext = this.createSqlContext("/data/exampleInt.csv");
+        final Tuple2<Collection<Record>, WayangPlan> t = this.buildCollectorAndWayangPlan(sqlContext,
+                "SELECT * FROM fs.exampleInt WHERE CAST(NAMEB AS DOUBLE) = 1.0");
+        final Collection<Record> result = t.field0;
+        final WayangPlan wayangPlan = t.field1;
+
+        // except reduce by
+        PlanTraversal.upstream().traverse(wayangPlan.getSinks()).getTraversedNodes()
+                .forEach(node -> node.addTargetPlatform(Java.platform()));
+
+        sqlContext.execute(wayangPlan);
+
+        assertTrue(!result.isEmpty());
+        assertTrue(result.stream().allMatch(field -> field.getField(1).equals(1)));
+    }
+
+
+    @Test
     void javaFilterWithCast() throws Exception {
         final SqlContext sqlContext = this.createSqlContext("/data/largeLeftTableIndex.csv");
         final Tuple2<Collection<Record>, WayangPlan> t = this.buildCollectorAndWayangPlan(sqlContext,
