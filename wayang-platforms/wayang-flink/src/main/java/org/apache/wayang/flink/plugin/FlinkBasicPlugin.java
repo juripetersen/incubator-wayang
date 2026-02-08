@@ -35,7 +35,9 @@ import java.util.Collection;
 /**
  * This {@link Plugin} enables to use the basic Wayang {@link Operator}s on the {@link FlinkPlatform}.
  */
-public class FlinkBasicPlugin implements Plugin{
+public class FlinkBasicPlugin implements Plugin {
+    boolean useBoundedDataStreams = false;
+
     @Override
     public Collection<Platform> getRequiredPlatforms() {
         return Arrays.asList(FlinkPlatform.getInstance(), JavaPlatform.getInstance());
@@ -43,7 +45,8 @@ public class FlinkBasicPlugin implements Plugin{
 
     @Override
     public Collection<Mapping> getMappings() {
-        return Mappings.BASIC_MAPPINGS;
+
+        return useBoundedDataStreams ? Mappings.BOUNDED_STREAM_MAPPINGS : Mappings.BASIC_MAPPINGS;
     }
 
     @Override
@@ -53,6 +56,6 @@ public class FlinkBasicPlugin implements Plugin{
 
     @Override
     public void setProperties(Configuration configuration) {
-
+        useBoundedDataStreams = configuration.getBooleanProperty("wayang.flink.platforms.useDataStreams", false);
     }
 }

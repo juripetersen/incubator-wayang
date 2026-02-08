@@ -18,42 +18,38 @@
 
 package org.apache.wayang.flink.mapping;
 
-import org.apache.wayang.basic.operators.TextFileSource;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
+
+import org.apache.wayang.basic.operators.LocalCallbackSink;
 import org.apache.wayang.core.mapping.Mapping;
 import org.apache.wayang.core.mapping.OperatorPattern;
 import org.apache.wayang.core.mapping.PlanTransformation;
 import org.apache.wayang.core.mapping.ReplacementSubplanFactory;
 import org.apache.wayang.core.mapping.SubplanPattern;
-import org.apache.wayang.flink.operators.FlinkTextFileSource;
+import org.apache.wayang.core.types.DataSetType;
+import org.apache.wayang.flink.operators.FlinkDataStreamLocalCallbackSink;
 import org.apache.wayang.flink.platform.FlinkPlatform;
 
-import java.util.Collection;
-import java.util.Collections;
-
-/**
- * Mapping from {@link TextFileSource} to {@link FlinkTextFileSource}.
- */
-public class TextFileSourceMapping implements Mapping {
+public class StreamedLocalCallbackSinkMapping implements Mapping {
     @Override
     public Collection<PlanTransformation> getTransformations() {
         return Collections.singleton(new PlanTransformation(
                 this.createSubplanPattern(),
                 this.createReplacementSubplanFactory(),
-                FlinkPlatform.getInstance()
-        ));
+                FlinkPlatform.getInstance()));
     }
-
 
     private SubplanPattern createSubplanPattern() {
         final OperatorPattern<?> operatorPattern = new OperatorPattern<>(
-                "source", new TextFileSource("", null), false
-        );
+                "sink", new LocalCallbackSink<>(null, DataSetType.none()),
+                false);
         return SubplanPattern.createSingleton(operatorPattern);
     }
 
     private ReplacementSubplanFactory createReplacementSubplanFactory() {
-        return new ReplacementSubplanFactory.OfSingleOperators<TextFileSource>(
-                (matchedOperator, epoch) -> new FlinkTextFileSource(matchedOperator).at(epoch)
-        );
+        return new ReplacementSubplanFactory.OfSingleOperators<LocalCallbackSink<? extends Serializable>>(
+                (matchedOperator, epoch) -> new FlinkDataStreamLocalCallbackSink<>(matchedOperator).at(epoch));
     }
 }

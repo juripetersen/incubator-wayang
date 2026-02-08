@@ -18,22 +18,19 @@
 
 package org.apache.wayang.flink.mapping;
 
+import java.util.Collection;
+import java.util.Collections;
+
 import org.apache.wayang.basic.operators.TextFileSource;
 import org.apache.wayang.core.mapping.Mapping;
 import org.apache.wayang.core.mapping.OperatorPattern;
 import org.apache.wayang.core.mapping.PlanTransformation;
 import org.apache.wayang.core.mapping.ReplacementSubplanFactory;
 import org.apache.wayang.core.mapping.SubplanPattern;
-import org.apache.wayang.flink.operators.FlinkTextFileSource;
+import org.apache.wayang.flink.operators.FlinkBoundedTextFileSource;
 import org.apache.wayang.flink.platform.FlinkPlatform;
 
-import java.util.Collection;
-import java.util.Collections;
-
-/**
- * Mapping from {@link TextFileSource} to {@link FlinkTextFileSource}.
- */
-public class TextFileSourceMapping implements Mapping {
+public class BoundedTextFileSourceMapping implements Mapping {
     @Override
     public Collection<PlanTransformation> getTransformations() {
         return Collections.singleton(new PlanTransformation(
@@ -42,7 +39,6 @@ public class TextFileSourceMapping implements Mapping {
                 FlinkPlatform.getInstance()
         ));
     }
-
 
     private SubplanPattern createSubplanPattern() {
         final OperatorPattern<?> operatorPattern = new OperatorPattern<>(
@@ -53,7 +49,7 @@ public class TextFileSourceMapping implements Mapping {
 
     private ReplacementSubplanFactory createReplacementSubplanFactory() {
         return new ReplacementSubplanFactory.OfSingleOperators<TextFileSource>(
-                (matchedOperator, epoch) -> new FlinkTextFileSource(matchedOperator).at(epoch)
+                (matchedOperator, epoch) -> new FlinkBoundedTextFileSource(matchedOperator).at(epoch)
         );
     }
 }

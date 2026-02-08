@@ -58,7 +58,7 @@ public class FunctionCompiler {
      * @param <O>        output type of the transformation
      * @return a compiled function
      */
-    public <I, O> MapFunction<I, O> compile(TransformationDescriptor<I, O> descriptor) {
+    public static <I, O> MapFunction<I, O> compile(TransformationDescriptor<I, O> descriptor) {
         // This is a dummy method but shows the intention of having something compilable in the descriptors.
         Function<I, O> function = descriptor.getJavaImplementation();
         return (MapFunction<I, O>) i -> function.apply(i);
@@ -72,7 +72,7 @@ public class FunctionCompiler {
      * @param <O>        output type of the transformation
      * @return a compiled function
      */
-    public <I, O> FlatMapFunction<I, O> compile(FunctionDescriptor.SerializableFunction<I, Iterable<O>> flatMapDescriptor) {
+    public static <I, O> FlatMapFunction<I, O> compile(FunctionDescriptor.SerializableFunction<I, Iterable<O>> flatMapDescriptor) {
         return (t, collector) -> flatMapDescriptor.apply(t).forEach(collector::collect);
     }
 
@@ -83,7 +83,7 @@ public class FunctionCompiler {
      * @param <T>     input/output type of the transformation
      * @return a compiled function
      */
-    public <T> ReduceFunction<T> compile(ReduceDescriptor<T> descriptor) {
+    public static <T> ReduceFunction<T> compile(ReduceDescriptor<T> descriptor) {
         // This is a dummy method but shows the intention of having something compilable in the descriptors.
         BiFunction<T, T, T> reduce_function = descriptor.getJavaImplementation();
         return new ReduceFunction<T>() {
@@ -94,26 +94,26 @@ public class FunctionCompiler {
         };
     }
 
-    public <T> FilterFunction<T> compile(PredicateDescriptor.SerializablePredicate<T> predicateDescriptor) {
-        return t -> predicateDescriptor.test(t);
+    public static <T> FilterFunction<T> compile(PredicateDescriptor.SerializablePredicate<T> predicateDescriptor) {
+        return predicateDescriptor::test;
     }
 
 
-    public <T> OutputFormat<T> compile(ConsumerDescriptor.SerializableConsumer<T> consumerDescriptor) {
+    public static <T> OutputFormat<T> compile(ConsumerDescriptor.SerializableConsumer<T> consumerDescriptor) {
         return new OutputFormatConsumer<T>(consumerDescriptor);
     }
 
 
-    public <T, K> KeySelector<T, K> compileKeySelector(TransformationDescriptor<T, K> descriptor){
+    public static <T, K> KeySelector<T, K> compileKeySelector(TransformationDescriptor<T, K> descriptor){
         return new KeySelectorFunction<T, K>(descriptor);
     }
 
-    public <T0, T1, O> CoGroupFunction<T0, T1, O> compileCoGroup(){
+    public static <T0, T1, O> CoGroupFunction<T0, T1, O> compileCoGroup(){
         return new FlinkCoGroupFunction<T0, T1, O>();
     }
 
 
-    public <T> TextOutputFormat.TextFormatter<T> compileOutput(TransformationDescriptor<T, String> formattingDescriptor) {
+    public static <T> TextOutputFormat.TextFormatter<T> compileOutput(TransformationDescriptor<T, String> formattingDescriptor) {
         Function<T, String> format = formattingDescriptor.getJavaImplementation();
         return new TextOutputFormat.TextFormatter<T>(){
 
@@ -132,7 +132,7 @@ public class FunctionCompiler {
      * @param <O>        output type of the transformation
      * @return a compiled function
      */
-    public <I, O> MapPartitionFunction<I, O> compile(MapPartitionsDescriptor<I, O> descriptor){
+    public static <I, O> MapPartitionFunction<I, O> compile(MapPartitionsDescriptor<I, O> descriptor){
         Function<Iterable<I>, Iterable<O>> function = descriptor.getJavaImplementation();
         return new MapPartitionFunction<I, O>() {
             @Override
@@ -146,13 +146,12 @@ public class FunctionCompiler {
         };
     }
 
-    public <T> WayangConvergenceCriterion compile(PredicateDescriptor<Collection<T>> descriptor){
-        FunctionDescriptor.SerializablePredicate<Collection<T>> predicate = descriptor.getJavaImplementation();
-        return new WayangConvergenceCriterion(predicate);
+    public static <T> WayangConvergenceCriterion<T> compile(PredicateDescriptor<Collection<T>> descriptor){
+        return new WayangConvergenceCriterion<T>(descriptor.getJavaImplementation());
     }
 
 
-    public <I, O> RichFlatMapFunction<I, O> compile(FunctionDescriptor.ExtendedSerializableFunction<I, Iterable<O>> flatMapDescriptor, FlinkExecutionContext exe) {
+    public static <I, O> RichFlatMapFunction<I, O> compile(FunctionDescriptor.ExtendedSerializableFunction<I, Iterable<O>> flatMapDescriptor, FlinkExecutionContext exe) {
 
         return new RichFlatMapFunction<I, O>() {
             @Override
@@ -168,7 +167,7 @@ public class FunctionCompiler {
     }
 
 
-    public <I, O> RichMapFunction<I, O> compile(TransformationDescriptor<I, O> mapDescriptor, FlinkExecutionContext fex ) {
+    public static <I, O> RichMapFunction<I, O> compile(TransformationDescriptor<I, O> mapDescriptor, FlinkExecutionContext fex ) {
 
         FunctionDescriptor.ExtendedSerializableFunction<I, O> map = (FunctionDescriptor.ExtendedSerializableFunction) mapDescriptor.getJavaImplementation();
         return new RichMapFunction<I, O>() {
@@ -186,7 +185,7 @@ public class FunctionCompiler {
 
 
 
-    public <I, O> RichMapPartitionFunction<I, O> compile(MapPartitionsDescriptor<I, O> descriptor, FlinkExecutionContext fex){
+    public static <I, O> RichMapPartitionFunction<I, O> compile(MapPartitionsDescriptor<I, O> descriptor, FlinkExecutionContext fex){
         FunctionDescriptor.ExtendedSerializableFunction<Iterable<I>, Iterable<O>> function =
                 (FunctionDescriptor.ExtendedSerializableFunction<Iterable<I>, Iterable<O>>)
                         descriptor.getJavaImplementation();

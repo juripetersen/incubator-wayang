@@ -19,6 +19,7 @@
 package org.apache.wayang.flink.execution;
 
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.api.exception.WayangException;
 import org.apache.wayang.core.optimizer.OptimizationContext;
@@ -35,7 +36,6 @@ import org.apache.wayang.core.util.Tuple;
 import org.apache.wayang.flink.compiler.FunctionCompiler;
 import org.apache.wayang.flink.operators.FlinkExecutionOperator;
 import org.apache.wayang.flink.platform.FlinkPlatform;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -55,6 +55,12 @@ public class FlinkExecutor extends PushExecutorTemplate {
      *
      */
     public ExecutionEnvironment fee;
+
+
+    /**
+     * {@link StreamExecutionEnvironment} for bounded and continuous streams.
+     */
+    public StreamExecutionEnvironment sEnv;
 
     /**
      * Compiler to create flink UDFs.
@@ -76,6 +82,7 @@ public class FlinkExecutor extends PushExecutorTemplate {
         super(job);
         this.platform = flinkPlatform;
         this.flinkContextReference = this.platform.getFlinkContext(job);
+        this.sEnv = flinkPlatform.streamExecutionEnvironment;
         this.fee = this.flinkContextReference.get();
         this.numDefaultPartitions = (int) this.getConfiguration().getLongProperty("wayang.flink.parallelism");
         this.fee.setParallelism(this.numDefaultPartitions);

@@ -18,7 +18,13 @@
 
 package org.apache.wayang.flink.operators;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.Collection;
+
 import org.apache.flink.api.java.ExecutionEnvironment;
+
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.optimizer.DefaultOptimizationContext;
@@ -28,17 +34,13 @@ import org.apache.wayang.core.platform.ChannelInstance;
 import org.apache.wayang.core.platform.CrossPlatformExecutor;
 import org.apache.wayang.core.profiling.FullInstrumentationStrategy;
 import org.apache.wayang.flink.channels.DataSetChannel;
+import org.apache.wayang.flink.channels.DataStreamChannel;
 import org.apache.wayang.flink.execution.FlinkExecutor;
 import org.apache.wayang.flink.platform.FlinkPlatform;
 import org.apache.wayang.flink.test.ChannelFactory;
 import org.apache.wayang.java.channels.CollectionChannel;
-import org.apache.wayang.flink.operators.FlinkExecutionOperator;
+
 import org.junit.jupiter.api.BeforeEach;
-
-import java.util.Collection;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * Test base for {@link FlinkExecutionOperator} tests.
@@ -49,51 +51,55 @@ public class FlinkOperatorTestBase {
 
     protected FlinkExecutor flinkExecutor;
 
-    @BeforeEach
-    void setUp(){
-        this.configuration = new Configuration();
-        if(flinkExecutor == null)
-            this.flinkExecutor = (FlinkExecutor) FlinkPlatform.getInstance().getExecutorFactory().create(this.mockJob());
+    public ExecutionEnvironment getEnv() {
+        return this.flinkExecutor.fee;
     }
 
-    Job mockJob() {
-        final Job job = mock(Job.class);
-        when(job.getConfiguration()).thenReturn(this.configuration);
-        when(job.getCrossPlatformExecutor()).thenReturn(new CrossPlatformExecutor(job, new FullInstrumentationStrategy()));
-        return job;
-    }
-
-    protected OptimizationContext.OperatorContext createOperatorContext(Operator operator) {
-        OptimizationContext optimizationContext = new DefaultOptimizationContext(mockJob());
+    protected OptimizationContext.OperatorContext createOperatorContext(final Operator operator) {
+        final OptimizationContext optimizationContext = new DefaultOptimizationContext(mockJob());
         return optimizationContext.addOneTimeOperator(operator);
     }
 
-
-    protected void evaluate(FlinkExecutionOperator operator,
-                            ChannelInstance[] inputs,
-                            ChannelInstance[] outputs) throws Exception {
+    protected void evaluate(final FlinkExecutionOperator operator,
+            final ChannelInstance[] inputs,
+            final ChannelInstance[] outputs) throws Exception {
         operator.evaluate(inputs, outputs, this.flinkExecutor, this.createOperatorContext(operator));
-    }
-
-
-    DataSetChannel.Instance createDataSetChannelInstance() {
-        return ChannelFactory.createDataSetChannelInstance(this.configuration);
-    }
-
-    DataSetChannel.Instance createDataSetChannelInstance(Collection<?> collection) {
-        return ChannelFactory.createDataSetChannelInstance(collection, this.flinkExecutor, this.configuration);
     }
 
     protected CollectionChannel.Instance createCollectionChannelInstance() {
         return ChannelFactory.createCollectionChannelInstance(this.configuration);
     }
 
-    protected CollectionChannel.Instance createCollectionChannelInstance(Collection<?> collection) {
+    protected CollectionChannel.Instance createCollectionChannelInstance(final Collection<?> collection) {
         return ChannelFactory.createCollectionChannelInstance(collection, this.configuration);
     }
 
-    public ExecutionEnvironment getEnv() {
-        return this.flinkExecutor.fee;
+    @BeforeEach
+    void setUp() {
+        this.configuration = new Configuration();
+        if (flinkExecutor == null)
+            this.flinkExecutor = (FlinkExecutor) FlinkPlatform.getInstance().getExecutorFactory()
+                    .create(this.mockJob());
+    }
+
+    Job mockJob() {
+        final Job job = mock(Job.class);
+        when(job.getConfiguration()).thenReturn(this.configuration);
+        when(job.getCrossPlatformExecutor())
+                .thenReturn(new CrossPlatformExecutor(job, new FullInstrumentationStrategy()));
+        return job;
+    }
+
+    DataSetChannel.Instance createDataSetChannelInstance() {
+        return ChannelFactory.createDataSetChannelInstance(this.configuration);
+    }
+
+    DataSetChannel.Instance createDataSetChannelInstance(final Collection<?> collection) {
+        return ChannelFactory.createDataSetChannelInstance(collection, this.flinkExecutor, this.configuration);
+    }
+
+    DataStreamChannel.Instance createDataStreamChannelInstance() {
+        return ChannelFactory.createDataStreamChannelInstance(this.configuration);
     }
 
 }

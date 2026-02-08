@@ -20,6 +20,7 @@ package org.apache.wayang.flink.platform;
 
 import org.apache.flink.api.java.CollectionEnvironment;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.wayang.basic.plugin.WayangBasic;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.Job;
@@ -60,14 +61,6 @@ public class FlinkPlatform extends Platform {
     private static final String[] OPTIONAL_FLINK_PROPERTIES = {
     };
 
-    /**
-     * <i>Lazy-initialized.</i> Maintains a reference to a {@link ExecutionEnvironment}. This instance's reference, however,
-     * does not hold a counted reference, so it might be disposed.
-     */
-    private FlinkContextReference flinkContextReference = null;
-
-    private Logger logger = LogManager.getLogger(this.getClass());
-
     public static FlinkPlatform getInstance() {
         if (instance == null) {
             instance = new FlinkPlatform();
@@ -75,57 +68,71 @@ public class FlinkPlatform extends Platform {
         return instance;
     }
 
+    public StreamExecutionEnvironment streamExecutionEnvironment = null;
+
+    /**
+     * <i>Lazy-initialized.</i> Maintains a reference to a
+     * {@link ExecutionEnvironment}. This instance's reference, however,
+     * does not hold a counted reference, so it might be disposed.
+     */
+    private FlinkContextReference flinkContextReference = null;
+
+    private final Logger logger = LogManager.getLogger(this.getClass());
+
     private FlinkPlatform() {
         super(PLATFORM_NAME, CONFIG_NAME);
     }
 
     /**
-     * Configures the single maintained {@link ExecutionEnvironment} according to the {@code job} and returns it.
+     * Configures the single maintained {@link ExecutionEnvironment} according to
+     * the {@code job} and returns it.
      *
-     * @return a {@link FlinkContextReference} wrapping the {@link ExecutionEnvironment}
+     * @return a {@link FlinkContextReference} wrapping the
+     *         {@link ExecutionEnvironment}
      */
-    public FlinkContextReference getFlinkContext(Job job) {
-        Configuration conf = job.getConfiguration();
-        String[] jars = getJars(job);
+    public FlinkContextReference getFlinkContext(final Job job) {
+        final Configuration conf = job.getConfiguration();
+        final String[] jars = getJars(job);
 
-        if(this.flinkContextReference == null)
+        if (this.flinkContextReference == null)
             switch (conf.getStringProperty("wayang.flink.mode.run")) {
-            case "local":
-                this.flinkContextReference = new FlinkContextReference(
-                        job.getCrossPlatformExecutor(),
-                        ExecutionEnvironment.getExecutionEnvironment(),
-                        (int) conf.getLongProperty("wayang.flink.parallelism")
-                );
-                break;
-            case "distribution":
-                org.apache.flink.configuration.Configuration flinkConfig = new org.apache.flink.configuration.Configuration();
-                flinkConfig.setString("rest.client.max-content-length", "1000000000");
-                this.flinkContextReference = new FlinkContextReference(
-                        job.getCrossPlatformExecutor(),
-                        ExecutionEnvironment.createRemoteEnvironment(
-                                conf.getStringProperty("wayang.flink.master"),
-                                Integer.parseInt(conf.getStringProperty("wayang.flink.port")),
-                                flinkConfig,
-                                jars
-                        ),
-                        (int)conf.getLongProperty("wayang.flink.parallelism")
-                );
-                break;
-            case "collection":
-            default:
-                this.flinkContextReference = new FlinkContextReference(
-                        job.getCrossPlatformExecutor(),
-                        new CollectionEnvironment(),
-                        1
-                );
-                break;
-        }
+                case "local":
+                    this.flinkContextReference = new FlinkContextReference(
+                            job.getCrossPlatformExecutor(),
+                            ExecutionEnvironment.getExecutionEnvironment(),
+                            (int) conf.getLongProperty("wayang.flink.parallelism"));
+                    break;
+                case "distribution":
+                    final org.apache.flink.configuration.Configuration flinkConfig = new org.apache.flink.configuration.Configuration();
+                    flinkConfig.setString("rest.client.max-content-length", "1000000000");
+                    this.flinkContextReference = new FlinkContextReference(
+                            job.getCrossPlatformExecutor(),
+                            ExecutionEnvironment.createRemoteEnvironment(
+                                    conf.getStringProperty("wayang.flink.master"),
+                                    Integer.parseInt(conf.getStringProperty("wayang.flink.port")),
+                                    flinkConfig,
+                                    jars),
+                            (int) conf.getLongProperty("wayang.flink.parallelism"));
+                    this.streamExecutionEnvironment = StreamExecutionEnvironment.createRemoteEnvironment(
+                            conf.getStringProperty("wayang.flink.master"),
+                            Integer.parseInt(conf.getStringProperty("wayang.flink.port")),
+                            flinkConfig,
+                            jars);
+                    break;
+                case "collection":
+                default:
+                    this.flinkContextReference = new FlinkContextReference(
+                            job.getCrossPlatformExecutor(),
+                            new CollectionEnvironment(),
+                            1);
+                    break;
+            }
         return this.flinkContextReference;
 
     }
 
     @Override
-    public void configureDefaults(Configuration configuration) {
+    public void configureDefaults(final Configuration configuration) {
         configuration.load(ReflectionUtils.loadResource(DEFAULT_CONFIG_FILE));
     }
 
@@ -135,40 +142,36 @@ public class FlinkPlatform extends Platform {
     }
 
     @Override
-    public LoadProfileToTimeConverter createLoadProfileToTimeConverter(Configuration configuration) {
-        int cpuMhz = (int) configuration.getLongProperty("wayang.flink.cpu.mhz");
-        int numCores = (int) ( configuration.getLongProperty("wayang.flink.parallelism"));
-        double hdfsMsPerMb = configuration.getDoubleProperty("wayang.flink.hdfs.ms-per-mb");
-        double networkMsPerMb = configuration.getDoubleProperty("wayang.flink.network.ms-per-mb");
-        double stretch = configuration.getDoubleProperty("wayang.flink.stretch");
+    public LoadProfileToTimeConverter createLoadProfileToTimeConverter(final Configuration configuration) {
+        final int cpuMhz = (int) configuration.getLongProperty("wayang.flink.cpu.mhz");
+        final int numCores = (int) (configuration.getLongProperty("wayang.flink.parallelism"));
+        final double hdfsMsPerMb = configuration.getDoubleProperty("wayang.flink.hdfs.ms-per-mb");
+        final double networkMsPerMb = configuration.getDoubleProperty("wayang.flink.network.ms-per-mb");
+        final double stretch = configuration.getDoubleProperty("wayang.flink.stretch");
         return LoadProfileToTimeConverter.createTopLevelStretching(
                 LoadToTimeConverter.createLinearCoverter(1 / (numCores * cpuMhz * 1000d)),
                 LoadToTimeConverter.createLinearCoverter(hdfsMsPerMb / 1000000d),
                 LoadToTimeConverter.createLinearCoverter(networkMsPerMb / 1000000d),
                 (cpuEstimate, diskEstimate, networkEstimate) -> cpuEstimate.plus(diskEstimate).plus(networkEstimate),
-                stretch
-        );
+                stretch);
     }
 
     @Override
-    public TimeToCostConverter createTimeToCostConverter(Configuration configuration) {
+    public TimeToCostConverter createTimeToCostConverter(final Configuration configuration) {
         return new TimeToCostConverter(
                 configuration.getDoubleProperty("wayang.flink.costs.fix"),
-                configuration.getDoubleProperty("wayang.flink.costs.per-ms")
-        );
+                configuration.getDoubleProperty("wayang.flink.costs.per-ms"));
     }
 
-
-    private String[] getJars(Job job){
-        List<String> jars = new ArrayList<>();
-        List<Class> clazzs = Arrays.asList(new Class[]{FlinkPlatform.class, WayangBasic.class, WayangContext.class});
+    private String[] getJars(final Job job) {
+        final List<String> jars = new ArrayList<>();
+        final List<Class> clazzs = Arrays
+                .asList(new Class[] { FlinkPlatform.class, WayangBasic.class, WayangContext.class });
 
         clazzs.stream().map(
-                ReflectionUtils::getDeclaringJar
-        ).filter(
-                element -> element != null
-        ).forEach(jars::add);
-
+                ReflectionUtils::getDeclaringJar).filter(
+                        element -> element != null)
+                .forEach(jars::add);
 
         final Set<String> udfJarPaths = job.getUdfJarPaths();
         if (udfJarPaths.isEmpty()) {

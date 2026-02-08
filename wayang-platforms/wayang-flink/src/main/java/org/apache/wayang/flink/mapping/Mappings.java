@@ -19,16 +19,21 @@
 package org.apache.wayang.flink.mapping;
 
 import org.apache.wayang.core.mapping.Mapping;
+import org.apache.wayang.flink.plugin.FlinkBasicPlugin;
 
 import java.util.Arrays;
 import java.util.Collection;
 
 /**
- * Register for {@link Mapping}s for this platform.
+ * Register for {@link Mapping}s for {@link FlinkBasicPlugin}.
  */
 public class Mappings {
 
-    public static Collection<Mapping> BASIC_MAPPINGS = Arrays.asList(
+    /**
+     * Mappings using Flink's DataSets
+     * @deprecated DataSet API in Flink has been deprecated move over to bounded streams for a 1-to-1 replacement {@link #BOUNDED_STREAM_MAPPINGS}.
+     */
+    public static final Collection<Mapping> BASIC_MAPPINGS = Arrays.asList(
             new CartesianMapping(),
             new CoGroupMapping(),
             new CollectionSourceMapping(),
@@ -60,6 +65,12 @@ public class Mappings {
             new ZipWithIdMapping()
     );
 
+    public static final Collection<Mapping> BOUNDED_STREAM_MAPPINGS = Arrays.asList(
+        new BoundedTextFileSourceMapping(),
+        new StreamedMapMapping(),
+        new StreamedJoinMapping(),
+        new StreamedLocalCallbackSinkMapping()
+    );
 }
 
 
