@@ -50,15 +50,6 @@
             <name>Apache License, Version 2.0</name>
             <url>https://www.apache.org/licenses/LICENSE-2.0</url>
             <distribution>repo</distribution>
-            <comments>
-                Apache Wayang is an effort undergoing incubation at The Apache Software
-                Foundation (ASF), sponsored by the Apache Incubator PMC. Incubation is required
-                of all newly accepted projects until a further review indicates that the
-                infrastructure, communications, and decision making process have stabilized in
-                a manner consistent with other successful ASF projects. While incubation status
-                is not necessarily a reflection of the completeness or stability of the code,
-                it does indicate that the project has yet to be fully endorsed by the ASF.
-            </comments>
         </license>
     </licenses>
 
@@ -166,7 +157,7 @@
             </dependencies>
 
             <build>
-              <finalName>apache-${project.artifactId}-incubating-${project.version}</finalName>
+              <finalName>apache-${project.artifactId}-${project.version}</finalName>
                 <plugins>
                     <!-- Configures JavaDoc generation. -->
                     <plugin>
@@ -664,7 +655,7 @@
         <profile>
             <id>apache-release</id>
             <build>
-                <finalName>apache-${project.artifactId}-incubating-${project.version}</finalName>
+                <finalName>apache-${project.artifactId}-${project.version}</finalName>
                 <resources>
                     <resource>
                         <directory>src/main/resources</directory>
@@ -695,7 +686,7 @@
                                     <goal>single</goal>
                                 </goals>
                                 <configuration>
-                                    <finalName>apache-${project.artifactId}-incubating-${project.version}</finalName>
+                                    <finalName>apache-${project.artifactId}-${project.version}</finalName>
                                 </configuration>
                             </execution>
                         </executions>
@@ -787,7 +778,7 @@
     </dependencies>
 
     <build>
-        <finalName>apache-${project.artifactId}-${project.version}-incubating</finalName>
+        <finalName>apache-${project.artifactId}-${project.version}</finalName>
         <!--
             Default versioned declarations of managed plugins
             to be overridden when the distribute profile is active.
@@ -811,7 +802,7 @@
                     <artifactId>maven-assembly-plugin</artifactId>
                     <version>3.5.0</version>
                     <configuration>
-                        <finalName>apache-${project.artifactId}-${project.version}-incubating</finalName>
+                        <finalName>apache-${project.artifactId}-${project.version}</finalName>
                     </configuration>
                 </plugin>
 
@@ -1113,8 +1104,6 @@
                             <resourceBundles>
                                 <!-- Will generate META-INF/{DEPENDENCIES,LICENSE,NOTICE} -->
                                 <resourceBundle>org.apache.apache.resources:apache-jar-resource-bundle:1.7</resourceBundle>
-                                <!-- Will generate META-INF/DISCLAIMER  -->
-                                <resourceBundle>org.apache.apache.resources:apache-incubator-disclaimer-resource-bundle:1.7</resourceBundle>
                             </resourceBundles>
                         </configuration>
                     </execution>
