@@ -63,9 +63,9 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:https://gitbox.apache.org/repos/asf/incubator-wayang.git</connection>
-        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/incubator-wayang.git</developerConnection>
-        <url>https://github.com/apache/incubator-wayang</url>
+        <connection>scm:git:https://gitbox.apache.org/repos/asf/wayang.git</connection>
+        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/wayang.git</developerConnection>
+        <url>https://github.com/apache/wayang</url>
     </scm>
 
     <issueManagement>
@@ -99,7 +99,7 @@
         <maven.kotlin.skip>false</maven.kotlin.skip>
 
         <!-- Timestamp for the reproducible builds -->
-        <project.build.outputTimestamp>2025-06-24T07:20:48Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2026-02-09T07:52:37Z</project.build.outputTimestamp>
 
         <scala.version>2.12.17</scala.version>
         <scala.mayor.version>2.12</scala.mayor.version>
