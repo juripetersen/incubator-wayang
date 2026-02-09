@@ -1304,12 +1304,10 @@
                     <releaseProfiles>apache-release</releaseProfiles>
                     <!--<pushChanges>false</pushChanges>-->
                     <!--<dryRun>true</dryRun>-->
-                    <releaseVersion>1.1.0</releaseVersion>
                     <updateWorkingCopyVersions>true</updateWorkingCopyVersions>
                     <updateDependencies>true</updateDependencies>
                     <scmReleaseCommitComment>@{prefix} prepare release 1.1.0</scmReleaseCommitComment>
-                    <tagNameFormat>apache-@{project.artifactId}-@{project.version}-incubating</tagNameFormat>
-                    <tagNameFormat>v${project.version}</tagNameFormat>
+                    <tagNameFormat>apache-@{project.artifactId}-@{project.version}</tagNameFormat>
                 </configuration>
             </plugin>
         </plugins>
