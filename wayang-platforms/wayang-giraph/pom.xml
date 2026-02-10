@@ -27,7 +27,6 @@
     </parent>
 
     <artifactId>wayang-giraph</artifactId>
-    <version>1.1.1-SNAPSHOT</version>
 
     <name>Wayang Platform Giraph</name>
     <description>

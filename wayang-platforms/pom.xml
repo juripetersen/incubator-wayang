@@ -28,7 +28,6 @@
     </parent>
 
     <artifactId>wayang-platforms</artifactId>
-    <version>1.1.1-SNAPSHOT</version>
 
     <name>Wayang Platform</name>
     <description>
