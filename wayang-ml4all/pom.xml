@@ -27,7 +27,6 @@
     </parent>
 
     <artifactId>wayang-ml4all</artifactId>
-    <version>1.1.1-SNAPSHOT</version>
 
     <name>Wayang ML4all</name>
     <description>
