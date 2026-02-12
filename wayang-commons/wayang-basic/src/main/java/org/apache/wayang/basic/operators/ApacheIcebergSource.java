@@ -296,7 +296,7 @@ public class ApacheIcebergSource extends UnarySource<Record> {
                 return OptionalLong.empty();
             }
 
-            if (this.whereExpressions != null && this.whereExpressions.size() > 1) {
+            if (this.whereExpressions != null && this.whereExpressions.size() > 0) {
 
                 Double updatedRowCount = rowCount * Math.pow(defaultSelectivityValue, this.whereExpressions.size());
                 return OptionalLong.of(updatedRowCount.longValue());
