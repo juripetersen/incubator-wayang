@@ -47,6 +47,11 @@ import scala.collection.JavaConversions
 import scala.collection.JavaConversions._
 import scala.reflect._
 
+import org.apache.iceberg.Schema
+import org.apache.iceberg.FileFormat
+import org.apache.iceberg.catalog.{Catalog, TableIdentifier}
+
+
 /**
   * Represents an intermediate result/data flow edge in a [[WayangPlan]].
   *
@@ -1013,7 +1018,6 @@ class DataQuanta[Out: ClassTag](val operator: ElementaryOperator, outputIndex: I
     this.planBuilder.buildAndExplain(toJson)
   }
 
-
   /**
     * Write the data quanta in this instance to a text file. Triggers execution.
     *
@@ -1027,6 +1031,44 @@ class DataQuanta[Out: ClassTag](val operator: ElementaryOperator, outputIndex: I
     writeTextFileJava(url, toSerializableFunction(formatterUdf), udfLoad)
   }
 
+  /**
+    * Write the data quanta in this instance to a iceberg table. Triggers execution.
+    *
+    * @param catalog          Iceberg Catalog
+    * @param schema           Iceberg Schema of the table to create
+    * @param tableIdentifier  Iceberg Table Identifier of the table to create
+    * @param outputFileFormat File format of the output data files
+    */
+
+  def writeIcebergTable(catalog: Catalog, 
+                      schema: Schema, 
+                      tableIdentifier: TableIdentifier,
+                      outputFileFormat: FileFormat): Unit = {
+    writeIcebergTableJava(catalog, schema, tableIdentifier, outputFileFormat)
+  }
+
+  /**
+    * Write the data quanta in this instance to a iceberg table. Triggers execution.
+    *
+    * @param catalog          Iceberg Catalog
+    * @param schema           Iceberg Schema of the table to create
+    * @param tableIdentifier  Iceberg Table Identifier of the table to create
+    * @param outputFileFormat File format of the output data files
+    */
+  def writeIcebergTableJava(
+    catalog: Catalog, 
+    schema: Schema, 
+    tableIdentifier: TableIdentifier,
+    outputFileFormat: FileFormat ): Unit = {
+    
+    val sink = new ApacheIcebergSink(catalog, schema, tableIdentifier, outputFileFormat)
+
+    sink.setName(s"*#-> Write to Iceberg Table Sink ")
+    this.connectTo(sink, 0)
+    this.planBuilder.sinks += sink
+    this.planBuilder.buildAndExecute()
+    this.planBuilder.sinks.clear()
+  }
   def writeParquet(url: String,
                    overwrite: Boolean = false,
                    preferDataset: Boolean = false)(implicit ev: Out =:= Record): Unit =
@@ -1094,6 +1136,7 @@ class DataQuanta[Out: ClassTag](val operator: ElementaryOperator, outputIndex: I
     this.planBuilder.buildAndExecute()
     this.planBuilder.sinks.clear()
   }
+
 
   private def writeParquetJava(url: String, overwrite: Boolean, preferDataset: Boolean)(implicit ev: Out =:= Record): Unit = {
     val _ = ev

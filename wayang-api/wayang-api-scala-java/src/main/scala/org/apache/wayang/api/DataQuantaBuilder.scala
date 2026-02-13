@@ -40,6 +40,10 @@ import org.apache.wayang.core.types.DataSetType
 import org.apache.wayang.core.util.{Logging, ReflectionUtils, WayangCollections, Tuple => WayangTuple}
 import org.apache.wayang.core.plan.wayangplan.OutputSlot
 
+import org.apache.iceberg.Schema
+import org.apache.iceberg.FileFormat
+import org.apache.iceberg.catalog.{Catalog, TableIdentifier}
+
 
 
 import scala.collection.mutable.ListBuffer
@@ -497,6 +501,27 @@ trait DataQuantaBuilder[+This <: DataQuantaBuilder[_, Out], Out] extends Logging
                     udfLoadProfileEstimator: LoadProfileEstimator): Unit = {
     this.javaPlanBuilder.withJobName(jobName)
     this.dataQuanta().writeTextFileJava(url, formatterUdf, udfLoadProfileEstimator)
+  }
+
+    /**
+    * Feed the built [[DataQuanta]] into a [[org.apache.wayang.basic.operators.IcebergTableSink]]. This triggers
+    * execution of the constructed [[WayangPlan]].
+    *
+    * @param catalog          Iceberg Catalog
+    * @param schema           Iceberg Schema of the table to create
+    * @param tableIdentifier  Iceberg Table Identifier of the table to create
+    * @param outputFileFormat File format of the output data files    
+    * @return the collected data quanta
+    */
+
+  def writeIcebergTable(catalog: Catalog, 
+                      schema: Schema, 
+                      tableIdentifier: TableIdentifier,
+                      outputFileFormat: FileFormat,
+                      jobName: String): Unit = {
+    this.javaPlanBuilder.withJobName(jobName)
+    this.dataQuanta().writeIcebergTableJava(catalog, schema, tableIdentifier, outputFileFormat)
+
   }
 
   /**

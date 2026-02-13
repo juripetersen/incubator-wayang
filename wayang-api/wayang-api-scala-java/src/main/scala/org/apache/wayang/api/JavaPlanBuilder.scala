@@ -25,13 +25,15 @@ import java.util.{Collection => JavaCollection}
 import org.apache.commons.lang3.Validate
 import org.apache.wayang.api.util.DataQuantaBuilderCache
 import org.apache.wayang.basic.data.Record
-import org.apache.wayang.basic.operators.{AmazonS3Source, AzureBlobStorageSource, GoogleCloudStorageSource, KafkaTopicSource, ParquetSource, TableSource, TextFileSource}
+import org.apache.wayang.basic.operators.{AmazonS3Source, AzureBlobStorageSource, GoogleCloudStorageSource, KafkaTopicSource, ParquetSource, TableSource, TextFileSource, ApacheIcebergSource}
 import org.apache.wayang.commons.util.profiledb.model.Experiment
 import org.apache.wayang.core.api.WayangContext
 import org.apache.wayang.core.plan.wayangplan._
 import org.apache.wayang.core.types.DataSetType
 
 import scala.reflect.ClassTag
+import org.apache.iceberg.catalog.{Catalog, TableIdentifier}
+import org.apache.iceberg.expressions.Expression
 
 /**
   * Utility to build and execute [[WayangPlan]]s.
@@ -78,6 +80,22 @@ class JavaPlanBuilder(wayangCtx: WayangContext, jobName: String) {
                   projection: Array[String] = null,
                   preferDataset: Boolean = false): UnarySourceDataQuantaBuilder[UnarySourceDataQuantaBuilder[_, Record], Record] =
     createSourceBuilder(ParquetSource.create(url, projection).preferDatasetOutput(preferDataset))(ClassTag(classOf[Record]))
+
+  /**
+   * Read an Apache Iceberg table and provide it as a dataset of [[Record]]s.
+   *
+   * @param catalog the Iceberg catalog containing the table
+   * @param tableIdentifier the identifier of the Iceberg table to read
+   * @param filterExpressions optional array of filter expressions to apply during the read
+   * @param projectionColumns optional array of column names to project (select specific columns)
+   * @return [[DataQuantaBuilder]] for the Iceberg table
+   */
+  def readApacheIcebergTable(
+    catalog: Catalog, 
+    tableIdentifier: TableIdentifier, 
+    filterExpressions: Array[Expression] = null, 
+    projectionColumns: Array[String] = null): UnarySourceDataQuantaBuilder[UnarySourceDataQuantaBuilder[_, Record], Record] =
+      createSourceBuilder(ApacheIcebergSource.create(catalog, tableIdentifier, filterExpressions, projectionColumns))(ClassTag(classOf[Record]))
 
   /**
     * Read a text file from a Google Cloud Storage bucket and provide it as a dataset of [[String]]s, one per line.
